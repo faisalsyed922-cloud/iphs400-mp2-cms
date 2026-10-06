@@ -85,3 +85,16 @@ def test_deactivated_user_cannot_use_the_console(db_path, make_client):
     assert "invalid email or password" in log_in(
         make_client(), DEMO_USERS["editor"]["email"],
         DEMO_USERS["editor"]["password"]).text.lower()
+
+
+def test_session_survives_the_clock_stepping_backwards(client_as):
+    """Regression (T06 flake): a wall clock a few seconds behind the one that
+    signed the cookie (WSL2 clock syncs) must not log the user out."""
+    from unittest import mock
+    import time
+    c = client_as("admin")
+    real = time.time
+    with mock.patch("time.time", lambda: real() - 3):
+        assert c.get("/admin", follow_redirects=False).status_code == 200
+    with mock.patch("time.time", lambda: real() - 3600):  # far-future cookie: still refused
+        assert c.get("/admin", follow_redirects=False).status_code in (302, 303)

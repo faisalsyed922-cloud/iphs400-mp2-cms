@@ -4,10 +4,38 @@ from __future__ import annotations
 import secrets
 
 from fastapi import Depends, HTTPException, Request
+from itsdangerous import SignatureExpired, TimestampSigner
+from starlette.middleware.sessions import SessionMiddleware
 
 from app import users
 
 SESSION_SECONDS = 8 * 60 * 60
+# How far in the future a validly signed session may look. A wall clock that
+# steps backwards (WSL2 and VM clock syncs do) would otherwise log everyone out.
+CLOCK_SKEW_SECONDS = 5 * 60
+
+
+class SkewTolerantSigner(TimestampSigner):
+    """itsdangerous rejects a cookie stamped even 1s ahead of the clock; allow a little."""
+
+    def unsign(self, signed_value, max_age=None, return_timestamp=False):
+        try:
+            return super().unsign(signed_value, max_age=max_age,
+                                  return_timestamp=return_timestamp)
+        except SignatureExpired as exc:
+            signed = exc.date_signed
+            # Only raised after the signature itself verified.
+            ahead = signed.timestamp() - self.get_timestamp() if signed else 0
+            if not 0 < ahead <= CLOCK_SKEW_SECONDS:
+                raise
+            value = exc.payload
+            return (value, signed) if return_timestamp else value
+
+
+class SkewTolerantSessionMiddleware(SessionMiddleware):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.signer = SkewTolerantSigner(str(kwargs.get("secret_key") or args[1]))
 
 
 class LoginRequired(Exception):

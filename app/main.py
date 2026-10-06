@@ -13,11 +13,10 @@ from pathlib import Path
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
-from starlette.middleware.sessions import SessionMiddleware
 
 from app import pages, posts, settings, users
 from app.routes import auth, pages as pages_routes, posts as posts_routes, user_password, users as users_routes
-from app.security import SESSION_SECONDS, AdminRequired, LoginRequired, PasswordChangeRequired, csrf_token, current_user
+from app.security import SESSION_SECONDS, SkewTolerantSessionMiddleware, AdminRequired, LoginRequired, PasswordChangeRequired, csrf_token, current_user
 from app.templating import templates
 
 
@@ -27,7 +26,7 @@ def create_app(database: Path | None = None) -> FastAPI:
     users.init_db(app.state.database)
     posts.init_posts(app.state.database)
     pages.init_pages(app.state.database)
-    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY,
+    app.add_middleware(SkewTolerantSessionMiddleware, secret_key=settings.SECRET_KEY,
                        max_age=SESSION_SECONDS, same_site="lax")
 
     @app.exception_handler(LoginRequired)

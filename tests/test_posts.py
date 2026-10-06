@@ -209,9 +209,44 @@ def test_preview_renders_formatting_and_marks_outside_links(client_as):
     assert re.search(r'<a href="https://example.org/x"[^>]*rel="[^"]*noopener', html)
 
 
-def test_preview_blocks_javascript_links(client_as):
-    html = preview(client_as("editor"), "[x](javascript:alert(1))").text
-    assert "href=\"javascript" not in html.lower()
+JS_LINK_TRICKS = [
+    "[x](javascript:alert(1))",
+    "[x](JaVaScRiPt:alert(1))",
+    "[x](java&#115;cript:alert(1))",
+    "[x](&#106;avascript:alert(1))",
+    "[x](java&#x73;cript:alert(1))",
+    "[x](<javascript:alert(1)>)",
+    "[x]( javascript:alert(1))",
+    '<a href="javascript:alert(1)">x</a>',
+    "<a href='javascript:alert(1)'>x</a>",
+    "<a href=javascript:alert(1)>x</a>",
+    '<a href="java&#115;cript:alert(1)">x</a>',
+    '<a href="java&#x09;script:alert(1)">x</a>',
+    '<a href="&#x6A;avascript:alert(1)">x</a>',
+    '<a href="data:text/html,<script>alert(1)</script>">x</a>',
+    '<a href="vbscript:msgbox(1)">x</a>',
+]
+
+
+@pytest.mark.parametrize("body", JS_LINK_TRICKS)
+def test_preview_never_emits_a_script_url(client_as, body):
+    """Parse the output and inspect every real href/src, so quoting and
+    entity-encoding tricks cannot hide a dangerous URL from the check."""
+    from html.parser import HTMLParser
+
+    urls = []
+
+    class Collect(HTMLParser):
+        def handle_starttag(self, tag, attrs):
+            urls.extend(v or "" for k, v in attrs if k in ("href", "src", "action"))
+
+    html = preview(client_as("editor"), body).text
+    # the preview page's own chrome has no links to outside schemes; only
+    # inspect the article, where user content lives
+    Collect().feed(html.split("<article>")[1])
+    for url in urls:
+        scheme = re.sub(r"[\x00-\x20]", "", url).lower().partition(":")[0]
+        assert ":" not in url or scheme in ("http", "https", "mailto"), url
 
 
 def test_preview_requires_login_and_csrf(client, client_as):

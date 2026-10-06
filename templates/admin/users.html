@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Users</h1>
+  <p><a href="{{ url_for('user_new') }}">New user</a> · <a href="{{ url_for('admin_home') }}">Dashboard</a></p>
+  <ul>
+  {% for u in users %}
+    <li>
+      <strong data-status="{{ 'active' if u.is_active else 'deactivated' }}">{{ 'Active' if u.is_active else 'Deactivated' }}</strong>
+      <a href="{{ url_for('user_edit', user_id=u.id) }}">{{ u.display_name }}</a>
+      — {{ u.role | capitalize }}{% if u.title %}, {{ u.title }}{% endif %}{% if u.term %}, {{ u.term }}{% endif %}
+      <small>{{ u.email }}</small>
+    </li>
+  {% endfor %}
+  </ul>
+  <h2>Contact line for blocked Editors</h2>
+  <p><small>Shown to an Editor who opens an Admin-only page. It is never published to the site.</small></p>
+  <form method="post" action="/admin/users/contact">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><label>Contact line <input name="contact_line" value="{{ contact_line }}" size="50"></label>
+    <button type="submit">Save</button></p>
+  </form>
+{% endblock %}

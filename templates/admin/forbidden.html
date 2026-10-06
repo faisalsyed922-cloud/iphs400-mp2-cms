@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Admin only</h1>
+  <p>You do not have permission to use this page.</p>
+  {% if admin %}<p>To ask for access, contact the current Admin, {{ admin.display_name }}{% if admin.title %} ({{ admin.title }}){% endif %}.</p>{% endif %}
+  {% if contact_line %}<p>{{ contact_line }}</p>{% endif %}
+  <p><a href="{{ url_for('admin_home') }}">Back to the console</a></p>
+{% endblock %}

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import secrets
 
-from fastapi import HTTPException, Request
+from fastapi import Depends, HTTPException, Request
 
 from app import users
 
@@ -43,4 +43,15 @@ def current_user(request: Request):
     if user is None or not user["is_active"]:
         request.session.clear()
         raise LoginRequired
+    return user
+
+
+class AdminRequired(Exception):
+    """Raised for a logged-in non-Admin on an admin-only URL; becomes a 403 page."""
+
+
+def require_admin(user=Depends(current_user)):
+    """Dependency for every admin-only route. Anonymous users redirect first."""
+    if user["role"] != "admin":
+        raise AdminRequired
     return user

@@ -16,8 +16,8 @@ from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
 from app import posts, settings, users
-from app.routes import auth, posts as posts_routes
-from app.security import SESSION_SECONDS, LoginRequired, csrf_token, current_user
+from app.routes import auth, posts as posts_routes, users as users_routes
+from app.security import SESSION_SECONDS, AdminRequired, LoginRequired, csrf_token, current_user
 from app.templating import templates
 
 
@@ -33,7 +33,17 @@ def create_app(database: Path | None = None) -> FastAPI:
     def send_to_login(request: Request, exc: LoginRequired):
         return RedirectResponse("/login", status_code=303)
 
+    @app.exception_handler(AdminRequired)
+    def admin_only(request: Request, exc: AdminRequired):
+        db = request.app.state.database
+        return templates.TemplateResponse(
+            request, "admin/forbidden.html",
+            {"title": "Admin only", "admin": users.current_admin(db),
+             "contact_line": users.get_setting(db, "contact_line")},
+            status_code=403)
+
     app.include_router(auth.router)
+    app.include_router(users_routes.router)
     app.include_router(posts_routes.router)
 
     @app.get("/admin")

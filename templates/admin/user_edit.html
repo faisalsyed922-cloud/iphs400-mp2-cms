@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Edit user</h1>
+  <p><a href="{{ url_for('users_list') }}">All users</a></p>
+  <p>{{ target.email }} · {{ 'Active' if target.is_active else 'Deactivated' }}</p>
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="/admin/users/{{ target.id }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <p><label>Display name <input name="display_name" value="{{ target.display_name }}" required></label></p>
+    <p><label>Title <input name="title" value="{{ target.title }}"></label></p>
+    <p><label>Term <input name="term" value="{{ target.term }}"></label></p>
+    <p><label>Role <select name="role">{% for r in roles %}<option value="{{ r }}"{% if target.role == r %} selected{% endif %}>{{ r | capitalize }}</option>{% endfor %}</select></label></p>
+    <p><button type="submit">Save</button></p>
+  </form>
+  {% if target.is_active %}
+  <form method="post" action="/admin/users/{{ target.id }}/deactivate">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Deactivate</button>
+    <small>They can no longer log in. Their Posts and Bylines stay.</small>
+  </form>
+  {% endif %}
+{% endblock %}

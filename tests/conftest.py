@@ -76,8 +76,10 @@ def client_as(make_client):
                                           "password": user["password"],
                                           "csrf_token": token_from(form.text)},
                           follow_redirects=False)
-        assert response.status_code in (200, 302, 303), (
-            f"Login as {role} failed with {response.status_code}")
+        # A failed login re-renders the form with a 200, so only a redirect
+        # proves the session was started.
+        assert response.status_code in (302, 303), (
+            f"Login as {role} failed with {response.status_code}: expected a redirect")
         return c
 
     return _login

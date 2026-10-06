@@ -43,17 +43,23 @@ Save in the repo as `notes/report-scratch.md`.
 - **Clone failed** with "Could not resolve to a Repository" — my GitHub username is `faisalsyed922-cloud`, not `faisalsyed922`. Found it with `gh auth status`.
 - **Started Claude with `--dangerously-skip-permissions`** for the first commit, then switched to plain `claude` — on a "commit everything" request that flag could have pushed `.env`. Now using auto mode.
 - `pytest` not on PATH; Claude ran tests with `.venv/bin/python -m pytest`.
+- **The template shipped with someone else's ledger rows.** First `usage_report.py` run showed 33% of a 5h window and 22% weekly, with Fable 5.1 and Sonnet 5 — models I never used. `head` showed rows dated Sep 29 at 55% weekly, a week before I started. Removed everything not dated Oct 6. Real numbers: 8% of a 5h window, 1% weekly. Lesson: check the data before trusting the forecast.
+- Phase file wasn't set, so all my setup turns are "unlabelled". Set it to `grill` before starting.
+- `/tdd` for `spend()` (Exercise B): 8/8 green, tests untouched. Again skipped "confirm seams" since tests were given.
 
 ## Budget numbers (report Q4)
 <!-- Paste usage_report.py output after T01 and T03. Plan vs actual. -->
 
-Baseline after setup + Exercise A: **5h 13% · weekly 7%** (Sonnet 5.5, medium).
+Status line after setup + Exercise A: 5h 13% · weekly 7% (Sonnet 5.5, medium). Those are absolute meter readings, not what MP2 cost.
+
+Ledger after cleanup (setup + Ex A + Ex B, 10 turns): **8% of 5h spent, 1% weekly**. So the weekly cost per % of window is much lower than my plan assumed (I guessed ~0.5% weekly per 1%; actual ~0.13%). My weekly forecast in the budget plan is probably too pessimistic.
 
 | Stage | Planned % of 5h | Actual % | Notes |
 |---|---|---|---|
-| setup + Exercise A | — | 13% | weekly 7% |
-| grill/spec/tickets | | | |
-| per ticket (avg) | | | |
+| setup + Ex A + Ex B | — | 8% | weekly 1%, "unlabelled" |
+| grill/spec/tickets | 50% | | |
+| per ticket (avg) | 10% | | |
+| per review | 2% | | |
 
 ## Backend switches (only if Plan B)
 
@@ -74,3 +80,7 @@ Baseline after setup + Exercise A: **5h 13% · weekly 7%** (Sonnet 5.5, medium).
 | ~3:57 | Skills installed via npx from PINNED.md |
 | ~4:06 | Setup committed `e20e461` |
 | ~4:14 | Exercise A green (10/10), committed; status line meter live |
+| ~4:20–4:50 | WordPress Playground field trip, field notes written |
+| ~4:50 | Client chosen: Delta Tau Delta, Chi Chapter (I'm president). Brief written |
+| ~5:00 | Exercise B green (8/8), budget plan written |
+| ~5:08 | Found + removed template's stale ledger rows; phase set to `grill` |

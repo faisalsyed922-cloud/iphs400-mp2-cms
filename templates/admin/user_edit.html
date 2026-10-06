@@ -12,6 +12,11 @@
     <p><label>Role <select name="role">{% for r in roles %}<option value="{{ r }}"{% if target.role == r %} selected{% endif %}>{{ r | capitalize }}</option>{% endfor %}</select></label></p>
     <p><button type="submit">Save</button></p>
   </form>
+  <form method="post" action="/admin/users/{{ target.id }}/reset-password">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Reset password</button>
+    <small>Sets a temporary password, shown once. They must change it at next login.</small>
+  </form>
   {% if target.is_active %}
   <form method="post" action="/admin/users/{{ target.id }}/deactivate">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">

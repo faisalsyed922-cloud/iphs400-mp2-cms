@@ -61,8 +61,9 @@ def create(request: Request, user=Depends(require_admin),
         return fail("Email and display name are required.")
     if role not in users.ROLES:
         return fail("Choose Admin or Editor.")
-    if len(password) < users.MIN_PASSWORD:
-        return fail(f"The password must be at least {users.MIN_PASSWORD} characters.")
+    problem = users.password_problem(password)
+    if problem:
+        return fail(problem)
     try:
         users.create_user(request.app.state.database, email=email,
                           password=password, role=role,
@@ -119,3 +120,20 @@ def deactivate(request: Request, user_id: int, user=Depends(require_admin)):
         return render(request, "admin/user_edit.html", 400, title="Edit user",
                       user=user, target=target, error=LAST_ADMIN)
     return RedirectResponse("/admin/users", status_code=303)
+
+
+@router.post("/{user_id:int}/reset-password", dependencies=guarded)
+def reset_password(request: Request, user_id: int, user=Depends(require_admin)):
+    """Set a temporary password and show it once, in this response only."""
+    target = load_user(request, user_id)
+    if target["id"] == user["id"]:
+        return render(request, "admin/user_edit.html", 400, title="Edit user",
+                      user=user, target=target,
+                      error="To reset your own password, use your own "
+                            "password page or run `cms reset-password` on the machine.")
+    temp = users.make_temporary_password()
+    users.set_password(request.app.state.database, user_id, temp, temporary=True)
+    response = render(request, "admin/user_temp_password.html", title="Temporary password",
+                      user=user, target=target, temp_password=temp)
+    response.headers["Cache-Control"] = "no-store"
+    return response

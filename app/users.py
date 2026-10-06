@@ -4,6 +4,7 @@ Passwords are only ever stored as argon2 hashes. Nothing here logs a password.
 """
 from __future__ import annotations
 
+import secrets
 import sqlite3
 from pathlib import Path
 
@@ -21,7 +22,8 @@ create table if not exists users (
     term text not null default '',
     role text not null check (role in ('admin', 'editor')),
     is_active integer not null default 1,
-    password_hash text not null
+    password_hash text not null,
+    must_change_password integer not null default 0
 )
 """
 
@@ -33,6 +35,13 @@ create table if not exists settings (
 """
 
 MIN_PASSWORD = 12
+
+
+def password_problem(password: str) -> str | None:
+    """The one place the password rule lives: a message if it fails, else None."""
+    if len(password) < MIN_PASSWORD:
+        return f"The password must be at least {MIN_PASSWORD} characters."
+    return None
 
 
 class LastAdmin(Exception):
@@ -53,6 +62,10 @@ def connect(database: Path) -> sqlite3.Connection:
 def init_db(database: Path) -> None:
     with connect(database) as conn:
         conn.execute(_SCHEMA)
+        columns = {r["name"] for r in conn.execute("pragma table_info(users)")}
+        if "must_change_password" not in columns:
+            conn.execute("alter table users add column must_change_password"
+                         " integer not null default 0")
         conn.execute(_SETTINGS_SCHEMA)
 
 
@@ -60,6 +73,9 @@ def create_user(database: Path, *, email: str, password: str, role: str,
                 display_name: str, title: str = "", term: str = "") -> int:
     if role not in ROLES:
         raise ValueError(f"role must be one of {ROLES}")
+    problem = password_problem(password)
+    if problem:
+        raise ValueError(problem)
     with connect(database) as conn:
         cur = conn.execute(
             "insert into users (email, display_name, title, term, role,"
@@ -89,6 +105,35 @@ def authenticate(database: Path, email: str, password: str) -> sqlite3.Row | Non
     if user is None or not user["is_active"]:
         return None
     return user
+
+
+def get_user_by_email(database: Path, email: str) -> sqlite3.Row | None:
+    with connect(database) as conn:
+        return conn.execute("select * from users where email = ?",
+                            (email.strip().lower(),)).fetchone()
+
+
+def set_password(database: Path, user_id: int, password: str, *,
+                 temporary: bool = False) -> None:
+    """Store a new argon2 hash. A temporary one must be changed at next login."""
+    problem = password_problem(password)
+    if problem:
+        raise ValueError(problem)
+    with connect(database) as conn:
+        conn.execute("update users set password_hash = ?,"
+                     " must_change_password = ? where id = ?",
+                     (_hasher.hash(password), int(temporary), user_id))
+
+
+def verify_password(user: sqlite3.Row, password: str) -> bool:
+    try:
+        return _hasher.verify(user["password_hash"], password)
+    except (VerifyMismatchError, InvalidHashError):
+        return False
+
+
+def make_temporary_password() -> str:
+    return secrets.token_urlsafe(12)
 
 
 def list_users(database: Path) -> list[sqlite3.Row]:

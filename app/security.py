@@ -36,13 +36,24 @@ def start_session(request: Request, user_id: int) -> None:
     request.session["csrf"] = secrets.token_urlsafe(32)
 
 
-def current_user(request: Request):
+class PasswordChangeRequired(Exception):
+    """A User on a temporary password must set their own first."""
+
+
+def logged_in_user(request: Request):
     """Dependency: the logged-in, active user, or redirect to login."""
     user_id = request.session.get("user_id")
     user = users.get_user(request.app.state.database, user_id) if user_id else None
     if user is None or not user["is_active"]:
         request.session.clear()
         raise LoginRequired
+    return user
+
+
+def current_user(user=Depends(logged_in_user)):
+    """Like logged_in_user, but a temporary password blocks everything else."""
+    if user["must_change_password"]:
+        raise PasswordChangeRequired
     return user
 
 

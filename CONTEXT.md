@@ -14,6 +14,10 @@ _Avoid_: Staff, member (a member need not hold a position)
 An Officer's login account in the CMS.
 _Avoid_: Account, profile
 
+**Temporary password**:
+A password the Admin resets another User to, shown to the Admin once. The User must replace it with their own at next login. The Admin's own recovery is `cms reset-password`, which sets a password directly and is not temporary.
+_Avoid_: Reset password, default password
+
 **Admin**:
 The role held by the president. Controls Users, Pages, navigation, and the final release to the public site.
 _Avoid_: Superuser, owner

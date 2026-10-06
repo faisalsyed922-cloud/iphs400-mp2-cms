@@ -4,6 +4,7 @@
     uv run cms publish    # render site/ from published content
     uv run cms deploy     # push site/ to the gh-pages branch (Pages serves it)
     uv run cms create-admin EMAIL   # make an Admin; asks for the password
+    uv run cms reset-password EMAIL # reset any User's password (hidden prompt)
 """
 from __future__ import annotations
 
@@ -29,9 +30,32 @@ def main(argv: list[str] | None = None, *, push=deploy.push_site,
     create = sub.add_parser("create-admin", help="create an Admin account")
     create.add_argument("email")
     create.add_argument("--name", default="Admin", help="display name")
+    reset = sub.add_parser("reset-password",
+                           help="reset a User's password (works for the Admin)")
+    reset.add_argument("email")
     args = parser.parse_args(argv)
 
+    if args.command == "reset-password":
+        users.init_db(settings.DATABASE_PATH)
+        target = users.get_user_by_email(settings.DATABASE_PATH, args.email)
+        if target is None:
+            print(f"No user with the email {args.email}.")
+            return 1
+        print(f"Passwords must be at least {users.MIN_PASSWORD} characters.")
+        password = getpass.getpass("New password: ")
+        if password != getpass.getpass("New password again: "):
+            print("The passwords did not match; nothing was changed.")
+            return 1
+        problem = users.password_problem(password)
+        if problem:
+            print(f"{problem} Nothing was changed.")
+            return 1
+        users.set_password(settings.DATABASE_PATH, target["id"], password)
+        print(f"Reset the password for {target['email']}.")
+        return 0
+
     if args.command == "create-admin":
+        print(f"Passwords must be at least {users.MIN_PASSWORD} characters.")
         password = getpass.getpass("Password: ")
         if password != getpass.getpass("Password again: "):
             print("The passwords did not match; nothing was created.")
@@ -41,6 +65,9 @@ def main(argv: list[str] | None = None, *, push=deploy.push_site,
             users.create_user(settings.DATABASE_PATH, email=args.email,
                               password=password, role="admin",
                               display_name=args.name)
+        except ValueError as exc:
+            print(f"{exc} Nothing was created.")
+            return 1
         except sqlite3.IntegrityError:
             print(f"{args.email} already has an account.")
             return 1

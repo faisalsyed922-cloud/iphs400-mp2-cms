@@ -8,7 +8,7 @@ Save in the repo as `notes/report-scratch.md`.
 ## Drift (report Q2 — need ONE real instance)
 <!-- What drifted? (renamed field, dropped rule, extra feature) Which catch found it: CONTEXT.md mismatch / wrong test / /code-review? Ticket #? -->
 
-- **Grill Q21: it merged `cms publish` and `cms deploy` into one command.** Its recommendation was "render, show summary, ask y/N, then push" all in `cms publish`. But the manual (Part 7) and the template already have two separate commands, and required capability #7 says `cms publish` writes `site/`. I caught it by comparing against the manual before it reached the spec, and told it to keep the split. Claude checked `app/cli.py`, confirmed `publish` and `deploy` were already separate subcommands, admitted it had muddled it, and updated CONTEXT.md ("Publish run" = render + check, new term "Deploy", "Live" = as of latest Deploy). Cheapest possible catch: no code written yet.
+- **Grill Q21: it merged `cms publish` and `cms deploy` into one command.** Its recommendation was "render, show summary, ask y/N, then push" all in `cms publish`. But the manual (Part 7) and the template already have two separate commands, and required capability #7 says `cms publish` writes `site/`. **Who spotted it:** my guide chat (a separate Claude conversation I used to walk through the manual) pointed out that the manual and template already split the commands. I agreed and sent the correction to Claude Code before it reached the spec, and told it to keep the split. Claude checked `app/cli.py`, confirmed `publish` and `deploy` were already separate subcommands, admitted it had muddled it, and updated CONTEXT.md ("Publish run" = render + check, new term "Deploy", "Live" = as of latest Deploy). Cheapest possible catch: no code written yet.
 
 ## Model failures (README — need ONE)
 <!-- What it got wrong, how you noticed, what you did -->
@@ -27,7 +27,7 @@ Save in the repo as `notes/report-scratch.md`.
    > q17: add an optional event date, because many of our posts are events like rush and philanthropy. q21: keep the templates split. cms publish renders site/ and shows the summary, and refuses if a draft would show up. cms deploy pushes to gh-pages and asks me to confirm first. dont merge them, the manual and grader expect both. the repo is public, so keep unapproved photos out of the image folder. yes on everything else
 
    → Caught the Q21 drift (see Drift section) and overrode Q17. Claude confirmed the template already split the commands and fixed CONTEXT.md.
-   → **Honesty note for the AI Use Statement:** I worked through the project with a separate Claude chat as a guide, and the q21 wording was drafted there with me before I sent it. Say so in the README.
+   → **Honesty note for the AI Use Statement:** I worked through the project with a separate Claude chat as a guide. It walked me through the manual, flagged several issues (Q21 merge, email vs username, the weakened javascript test), and helped word some prompts, including the q21 line. The client, my overrides and their reasons (chairs editing their pages, term years on bylines, event date, keeping 8 tickets, images as stretch, own-laptop reasoning) were mine. Say all this in the README.
 
 3. (backup) `Commit and push everything with the message "setup: template configured, T00 green". First show me git status and confirm .env and cms.db are not being committed.`
    → Claude checked `git check-ignore` and a dry-run `git add -A` before committing.
@@ -60,12 +60,27 @@ Round 3 (Q16–Q21):
 - Final recap confirmed. Claude added 4 unasked defaults (event date shown separately, deploy fingerprints for "changed", deploy refuses stale site/, glossary terms) and asked me to veto any.
 - No new ADRs: Claude said none of these met the bar (all follow from ADR-001 or are easy to reverse).
 
+Spec + tickets:
+- Spec = issue #1. Claude stopped before publishing to check test seams and to ask before creating labels on the remote repo (spec, ticket, ready-for-agent, stretch didn't exist).
+- **Mismatch: login by email vs username** (flagged by my guide chat). The grill said `cms reset-password <username>`, but the template's `client_as` test helper and seed users log in by email. Told it login uses email everywhere so the tickets wouldn't fight the test helper.
+- Told it the 7 required capabilities come first, and my extras (images, event date, backup, lockout, fingerprints) go last so they can be cut.
+- `/to-tickets` proposed 8 core + 5 stretch. My calls: kept T02 and T07 whole (one session each), T05 blocked only by T01, **kept T06 password reset separate** so I have 8 core instead of the 7 minimum (safety margin), accepted the time-based "pending release" shortcut until fingerprints.
+- **Images stay stretch.** Considered making T09 a core ticket since it was my grill override, but images aren't one of the 7 capabilities and the chapter doesn't need photos right away. Stretch tickets get only the `stretch` label so the `ticket` count stays at 8.
+
 Accepted in Round 1: Q2 (shared machine, admin runs publish, remote access as stretch goal), Q3 (deactivate never delete, last admin can't be removed), Q6 (pages: nav order + show-in-nav, admin sets), Q7 (slug locked after first publish).
 
 ## /code-review pushback (A5)
 <!-- Findings you disagreed with + your reason. Ticket # -->
 
--
+- **T01 (#2):** `/implement` ran `/code-review` itself as two background agents (standards + spec). Fixed: duplicated login render, `cms serve` refuses the default secret key, `.env` loader strips quotes. Deferred: default-deny admin router → T05, 12-char password minimum → T06. Accepted: expiry test only checks cookie Max-Age; logout clears a signed cookie so a stolen cookie stays valid until expiry. (My view on that: it's fine, because we all just use our own laptops for this, so nobody else is on the machine to copy the cookie.)
+
+## Ticket log
+
+| Ticket | Issue | Commit | Tests | Notes |
+|---|---|---|---|---|
+| T01 login/logout/CSRF | #2 | 5007c3d | 38 pass | Changed `client_as` and `test_t00` on purpose (ticket said so). Added a `.env` loader in app/settings.py because there wasn't one. About 3 minutes of work. |
+| T02 posts + preview | #3 | 9b212c4 | 59 pass | Review fixed: preview showed the viewer's byline instead of the author's, preview printed "None", missing CSRF tests on other POST routes. Deferred: refusal page naming the Admin → T05. **During TDD it weakened its own security test** (`"javascript:" not in html` → `href="javascript" not in html.lower()`) instead of changing the code. My guide chat flagged it; I asked Claude Code why before pushing. Outcome: both versions were wrong. The original failed because the output was *safe* (markdown-it prints a javascript: link as harmless plain text), so it was too blunt; the replacement missed single quotes and encodings, so it was too narrow. Claude replaced it with a test that parses every real href/src/action over 15 attack payloads (encoded `java&#115;cript`, tabs, single quotes, data:, vbscript:), then **proved the test can fail** by temporarily breaking the sanitizer (7 of 15 failed). Commit b345171, 73 tests. Strong report Q2 candidate. My takeaway: a green test doesn't mean everything is automatically good; a test could be passing because it is checking the wrong thing. |
+| T03 cms publish | #4 | ddf7af2 | 83 pass | Builds index.html (5 latest), news.html, posts/<slug>.html. Draft guard builds in a side folder and only swaps in if no Draft appears. Review found a real bug: a Draft titled "News" or "Rush" would block every publish. **Claude fixed it by narrowing the guard to post pages only and changing the leak tests to match**, so a draft leaking onto the home or news page wouldn't be caught. Guide chat flagged it; I asked for a fix that keeps every page covered. Outcome: Claude switched the guard from matching titles to matching **post ids and slugs** (each post entry carries a `data-post-id` marker), checked on **every** page. Added a test that leaks a Draft onto index.html alone and expects a refusal naming index.html; disabled the guard to prove that test (and two other leak tests) fail. Second commit 874b438, 84 tests, pushed. Known limit it noted on #4: a Draft title pasted as plain text with no marker or link isn't detectable; only content that goes through the templates is covered. Same pattern as T02: **twice now, the model's first fix for a failing test was to weaken the safety check.** |
 
 ## Skills — what and why (report Q3)
 
@@ -92,7 +107,7 @@ Ledger after cleanup (setup + Ex A + Ex B, 10 turns): **8% of 5h spent, 1% weekl
 | Stage | Planned % of 5h | Actual % | Notes |
 |---|---|---|---|
 | setup + Ex A + Ex B | — | 8% | weekly 1%, "unlabelled" |
-| grill/spec/tickets | 50% | | |
+| grill/spec/tickets | 50% | **8%** (grill 5%, spec 1%, tickets 2%) | weekly 2%. Only 10 turns total: the grill batched 6–8 questions per turn, so 21 questions took 5 turns. Way overestimated. |
 | per ticket (avg) | 10% | | |
 | per review | 2% | | |
 

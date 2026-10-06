@@ -18,3 +18,17 @@ ts,session,phase,provider,model,effort,ctx_pct,five_h_pct,weekly_pct
 2026-10-06T21:39:51Z,6e0298fd,spec,anthropic,Sonnet 5.5,high,9.0,25,9
 2026-10-06T21:43:26Z,6e0298fd,tickets,anthropic,Sonnet 5.5,high,10.0,26,9
 2026-10-06T21:49:32Z,6e0298fd,tickets,anthropic,Sonnet 5.5,high,12.0,28,10
+2026-10-06T21:51:16Z,6e0298fd,tickets,anthropic,Sonnet 5.5,high,12.0,28,10
+2026-10-06T21:57:50Z,6e0298fd,T01,anthropic,Sonnet 5.5,medium,14.0,30,10
+2026-10-06T21:58:14Z,6e0298fd,T01,anthropic,Sonnet 5.5,medium,15.0,32,10
+2026-10-06T21:59:09Z,6e0298fd,T01,anthropic,Sonnet 5.5,medium,15.0,32,10
+2026-10-06T21:59:49Z,6e0298fd,T01,anthropic,Sonnet 5.5,medium,16.0,32,10
+2026-10-06T22:02:23Z,6e0298fd,T01,anthropic,Sonnet 5.5,medium,16.0,34,10
+2026-10-06T22:06:15Z,772f668d,T02,anthropic,Sonnet 5.5,medium,9.0,36,11
+2026-10-06T22:06:42Z,772f668d,T02,anthropic,Sonnet 5.5,medium,9.0,36,11
+2026-10-06T22:07:36Z,772f668d,T02,anthropic,Sonnet 5.5,medium,10.0,38,11
+2026-10-06T22:10:49Z,772f668d,T02,anthropic,Sonnet 5.5,medium,10.0,39,11
+2026-10-06T22:17:21Z,4b950ff5,T03,anthropic,Sonnet 5.5,medium,7.0,41,12
+2026-10-06T22:17:42Z,4b950ff5,T03,anthropic,Sonnet 5.5,medium,7.0,42,12
+2026-10-06T22:19:20Z,4b950ff5,T03,anthropic,Sonnet 5.5,medium,7.0,43,12
+2026-10-06T22:22:40Z,4b950ff5,T03,anthropic,Sonnet 5.5,medium,8.0,46,12

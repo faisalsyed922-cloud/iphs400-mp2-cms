@@ -22,7 +22,7 @@ from app.templating import templates
 
 
 def create_app(database: Path | None = None) -> FastAPI:
-    app = FastAPI(title="IPHS 400 MP2 CMS")
+    app = FastAPI(title="Chi Chapter CMS")
     app.state.database = Path(database or settings.DATABASE_PATH)
     users.init_db(app.state.database)
     posts.init_posts(app.state.database)
@@ -47,7 +47,8 @@ def create_app(database: Path | None = None) -> FastAPI:
     def public_home(request: Request):
         return templates.TemplateResponse(
             request, "public/home.html",
-            {"title": settings.SITE_TITLE, "items": []},
+            {"title": settings.SITE_TITLE, "subtitle": settings.SITE_SUBTITLE,
+             "items": []},
         )
 
     # Your ticket work plugs in here, e.g.

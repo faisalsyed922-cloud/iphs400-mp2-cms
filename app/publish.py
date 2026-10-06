@@ -133,7 +133,8 @@ def _render_into(work: Path, database: Path) -> list[str]:
     def write(path: str, template: str, prefix: str, **ctx) -> None:
         # prefix is "" for top-level pages and "../" for pages in posts/
         (work / path).write_text(env.get_template(template).render(
-            title=settings.SITE_TITLE, css_path=prefix + "style.css",
+            title=settings.SITE_TITLE, subtitle=settings.SITE_SUBTITLE,
+            css_path=prefix + "style.css",
             home_path=prefix + nav["home_path"], news_path=prefix + nav["news_path"],
             **ctx))
 

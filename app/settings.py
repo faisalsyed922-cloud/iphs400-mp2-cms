@@ -25,7 +25,8 @@ SITE = ROOT / "site"
 DEV_SECRET_KEY = "dev-only-not-for-production"
 SECRET_KEY = os.environ.get("CMS_SECRET_KEY", DEV_SECRET_KEY)
 DATABASE_PATH = Path(os.environ.get("CMS_DATABASE", ROOT / "cms.db"))
-SITE_TITLE = os.environ.get("CMS_SITE_TITLE", "My CMS")
+SITE_TITLE = os.environ.get("CMS_SITE_TITLE", "Delta Tau Delta at Kenyon College")
+SITE_SUBTITLE = os.environ.get("CMS_SITE_SUBTITLE", "Chi Chapter")
 # Set this to your Pages URL once you deploy, e.g.
 # https://yourname.github.io/iphs400-mp2-cms/
 BASE_PATH = os.environ.get("CMS_BASE_PATH", "")

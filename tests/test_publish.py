@@ -144,3 +144,16 @@ def test_draft_titled_like_nav_word_does_not_block_publish(db_path, author, tmp_
     add(db_path, author, "Real Story")
     out = render_site(tmp_path / "site", database=db_path)
     assert (out / "posts" / "real-story.html").exists()
+
+
+def test_site_is_named_for_the_chapter_and_never_the_starter_names(db_path, author, tmp_path):
+    add(db_path, author, "Rush Night")
+    out = render_site(tmp_path / "site", database=db_path)
+    for path, text in site_text(out).items():
+        if path.suffix != ".html":
+            continue
+        assert "Delta Tau Delta at Kenyon College" in text, path
+        assert "Chi Chapter" in text, path
+    for path, text in site_text(out).items():
+        for old in ("Knox County", "Historical Society", "IPHS 400", "Mini-Project"):
+            assert old not in text, f"{old!r} found in {path.name}"

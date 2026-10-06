@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% block content %}
-  <h1>{{ title }}</h1>
+  <h1>{{ title }}{% if subtitle %} <small>{{ subtitle }}</small>{% endif %}</h1>
   {% if items %}
     {% for item in items %}
     <article data-post-id="{{ item.id }}">

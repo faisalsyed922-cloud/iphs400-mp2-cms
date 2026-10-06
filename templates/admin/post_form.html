@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <p><a href="/admin/posts">All posts</a></p>
+  {% if post %}
+    <p>Status: <strong data-status="{{ post.status }}">{{ post.status | capitalize }}</strong>
+      · Author: {{ post.author_name }}
+      · Created {{ post.created_at }} · Updated {{ post.updated_at }}
+      {% if post.published_at %}· Published {{ post.published_at }}{% endif %}</p>
+    {% if byline %}<p>Byline: {{ byline }}</p>{% endif %}
+  {% endif %}
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ '/admin/posts/' ~ post.id if post else '/admin/posts' }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if post %}<input type="hidden" name="post_id" value="{{ post.id }}">{% endif %}
+    <p><label>Title <input name="title" value="{{ form.title }}" required></label></p>
+    <p><label>Slug <input name="slug" value="{{ form.slug }}"{% if not can_edit_slug %} readonly{% endif %}></label>
+      {% if not can_edit_slug %}<small>Locked once a Post has been Published. Ask the Admin to unlock it.</small>{% endif %}</p>
+    <p><label>Body (Markdown)<br><textarea name="body" rows="16" cols="70">{{ form.body }}</textarea></label></p>
+    <p>
+      <button type="submit" name="action" value="save">Save</button>
+      <button type="submit" formaction="/admin/posts/preview" formtarget="_blank">Preview</button>
+      {% if not post or post.status == 'draft' %}<button type="submit" name="action" value="publish">Mark Published</button>{% endif %}
+      {% if post and post.status == 'published' %}<button type="submit" name="action" value="draft">Set back to Draft</button>{% endif %}
+    </p>
+  </form>
+  {% if can_unlock_slug %}
+  <form method="post" action="/admin/posts/{{ post.id }}/unlock-slug">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Unlock Slug</button>
+  </form>
+  {% endif %}
+  {% if can_delete %}
+  <form method="post" action="/admin/posts/{{ post.id }}/delete">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Delete post</button>
+  </form>
+  {% endif %}
+{% endblock %}

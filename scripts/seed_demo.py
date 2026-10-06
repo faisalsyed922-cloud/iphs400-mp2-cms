@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app import settings, users  # noqa: E402
+from app import posts, settings, users  # noqa: E402
 
 
 def main() -> int:
@@ -41,7 +41,22 @@ def main() -> int:
             print(f"Created {role} {email}")
         except sqlite3.IntegrityError:
             print(f"{email} already exists; left as is")
-    # TODO (later tickets): demo Posts and Pages, including a Draft.
+    posts.init_posts(settings.DATABASE_PATH)
+    editor = users.authenticate(settings.DATABASE_PATH, "editor@example.test",
+                                editor_pw)
+    existing = {p["slug"] for p in posts.list_posts(settings.DATABASE_PATH)}
+    for title, body, publish in (
+        ("Welcome to the new chapter site",
+         "The **Chi Chapter** now keeps its own news. Read more on our "
+         "[chapter page](https://example.org).", True),
+        ("Rush announcement (draft)", "Dates still to be confirmed.", False),
+    ):
+        if posts.slugify(title) in existing:
+            continue
+        posts.create_post(settings.DATABASE_PATH, author=editor, title=title,
+                          slug="", body=body, publish=publish)
+        print(f"Created {'Published' if publish else 'Draft'} post: {title}")
+    # TODO (later tickets): demo Pages.
     return 0
 
 

@@ -15,8 +15,8 @@ from fastapi import Depends, FastAPI, Request
 from fastapi.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import settings, users
-from app.routes import auth
+from app import posts, settings, users
+from app.routes import auth, posts as posts_routes
 from app.security import SESSION_SECONDS, LoginRequired, csrf_token, current_user
 from app.templating import templates
 
@@ -25,6 +25,7 @@ def create_app(database: Path | None = None) -> FastAPI:
     app = FastAPI(title="IPHS 400 MP2 CMS")
     app.state.database = Path(database or settings.DATABASE_PATH)
     users.init_db(app.state.database)
+    posts.init_posts(app.state.database)
     app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY,
                        max_age=SESSION_SECONDS, same_site="lax")
 
@@ -33,6 +34,7 @@ def create_app(database: Path | None = None) -> FastAPI:
         return RedirectResponse("/login", status_code=303)
 
     app.include_router(auth.router)
+    app.include_router(posts_routes.router)
 
     @app.get("/admin")
     def admin_home(request: Request, user=Depends(current_user)):

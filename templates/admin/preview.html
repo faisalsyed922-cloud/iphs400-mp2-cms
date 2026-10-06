@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+  <p role="note"><strong>Draft preview, not public</strong></p>
+  <article>
+    <h1>{{ title }}</h1>
+    <p><em>{{ byline }}</em></p>
+    {{ html | safe }}
+  </article>
+{% endblock %}

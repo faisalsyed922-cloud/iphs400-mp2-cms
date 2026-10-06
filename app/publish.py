@@ -40,15 +40,31 @@ class DraftInOutput(Exception):
     """A Draft's title or Slug would appear in the generated site."""
 
 
-def _posts_where(database: Path, where: str) -> list:
+def _rows_where(database: Path, table: str, where: str, order: str) -> list:
     if not database.exists():
         return []
     with connect(database) as conn:
-        if not conn.execute("select 1 from sqlite_master where name='posts'").fetchone():
+        if not conn.execute("select 1 from sqlite_master where name=?",
+                            (table,)).fetchone():
             return []
         return conn.execute(
-            f"select * from posts where {where} order by published_at desc, id desc"
-        ).fetchall()
+            f"select * from {table} where {where} order by {order}").fetchall()
+
+
+def _posts_where(database: Path, where: str) -> list:
+    return _rows_where(database, "posts", where, "published_at desc, id desc")
+
+
+def _pages_where(database: Path, where: str) -> list:
+    return _rows_where(database, "pages", where, "nav_order, title, id")
+
+
+def _published_pages(database: Path) -> list:
+    return _pages_where(database, "status='published'")
+
+
+def _draft_pages(database: Path) -> list:
+    return _pages_where(database, "status!='published'")
 
 
 def _published_posts(database: Path) -> list:
@@ -67,25 +83,29 @@ def _first_paragraph(html: str) -> str:
 def _check_no_drafts(site: Path, database: Path) -> None:
     """Refuse if any Draft made it into any page of the site.
 
-    Every post entry carries a data-post-id marker and links to
-    posts/<slug>.html. Both are compared with the Drafts straight from the
-    database (ids and Slugs are unique), on every file, so a Draft leaking onto
-    Home or News is caught as surely as one on its own page. Titles are not
-    matched: a Draft called "News" must not block every publish.
+    Every post entry carries a data-post-id marker (pages a data-page-id one) and
+    links to posts/<slug>.html (pages/<slug>.html). Both are compared with the
+    Drafts straight from the database (ids and Slugs are unique within a kind),
+    on every file, so a Draft leaking onto Home, News or the Navigation is
+    caught as surely as one on its own page. Titles are not matched: a Draft
+    called "News" must not block every publish.
     """
-    drafts = _draft_rows(database)
+    kinds = (("post", "posts", _draft_rows(database)),
+             ("page", "pages", _draft_pages(database)))
     for f in sorted(site.rglob("*")):
         if not f.is_file():
             continue
         text = f.read_text()
-        marked = {int(i) for i in re.findall(r'data-post-id="(\d+)"', text)}
-        for draft in drafts:
-            if (draft["id"] in marked or f"posts/{draft['slug']}.html" in text
-                    or f.name == f"{draft['slug']}.html" and f.parent.name == "posts"):
-                raise DraftInOutput(
-                    f"Refusing to publish: the Draft \"{draft['title']}\" would "
-                    f"appear in {f.relative_to(site)}. Drafts must never leave the "
-                    "database. The site was not written.")
+        for marker, folder, drafts in kinds:
+            marked = {int(i) for i in re.findall(rf'data-{marker}-id="(\d+)"', text)}
+            for draft in drafts:
+                if (draft["id"] in marked or f"{folder}/{draft['slug']}.html" in text
+                        or f.name == f"{draft['slug']}.html"
+                        and f.parent.name == folder):
+                    raise DraftInOutput(
+                        f"Refusing to publish: the Draft \"{draft['title']}\" would "
+                        f"appear in {f.relative_to(site)}. Drafts must never leave "
+                        "the database. The site was not written.")
 
 
 def render(out: Path | None = None, database: Path | None = None) -> tuple[Path, list[str]]:
@@ -126,25 +146,43 @@ def _render_into(work: Path, database: Path) -> list[str]:
             "href": f"posts/{post['slug']}.html",
         })
 
+    page_entries = []
+    for page in _published_pages(database):
+        page_entries.append({
+            "id": page["id"], "title": page["title"], "body": render_markdown(page["body"]),
+            "href": f"pages/{page['slug']}.html", "in_nav": bool(page["show_in_nav"]),
+            "is_home": bool(page["is_home"])})
+    home_page = next((p for p in page_entries if p["is_home"]), None)
+    # Navigation: Home, then Pages marked for it (already in order), then News.
+    nav_pages = [p for p in page_entries if p["in_nav"] and not p["is_home"]]
+
     (work / "style.css").write_text(CSS)
     (work / "posts").mkdir()
-    nav = {"home_path": "index.html", "news_path": "news.html"}
+    (work / "pages").mkdir()
+
+    links = ([("Home", "index.html")]
+             + [(p["title"], p["href"]) for p in nav_pages]
+             + [("News", "news.html")])
 
     def write(path: str, template: str, prefix: str, **ctx) -> None:
-        # prefix is "" for top-level pages and "../" for pages in posts/
+        # prefix is "" for top-level pages and "../" for pages in posts/ and pages/
         (work / path).write_text(env.get_template(template).render(
             title=settings.SITE_TITLE, subtitle=settings.SITE_SUBTITLE,
             css_path=prefix + "style.css",
-            home_path=prefix + nav["home_path"], news_path=prefix + nav["news_path"],
+            home_path=prefix + "index.html", news_path=prefix + "news.html",
+            nav_links=[(label, prefix + href) for label, href in links],
             **ctx))
 
-    write("index.html", "public/home.html", "", items=entries[:5])
+    write("index.html", "public/home.html", "", items=entries[:5], home_page=home_page)
     write("news.html", "public/news.html", "", items=entries)
     for e in entries:
         write(e["href"], "public/post.html", "../", post=e)
+    for p in page_entries:
+        write(p["href"], "public/page.html", "../", page=p)
     _check_no_drafts(work, database)
-    return ["Home (index.html)", "News (news.html)"] + [
-        f"Post: {e['title']} ({e['href']})" for e in entries]
+    return (["Home (index.html)", "News (news.html)"]
+            + [f"Page: {p['title']} ({p['href']})" for p in page_entries]
+            + [f"Post: {e['title']} ({e['href']})" for e in entries])
 
 
 def render_site(out: Path | None = None, database: Path | None = None) -> Path:

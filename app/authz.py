@@ -23,3 +23,14 @@ def can_edit_slug(user, post) -> bool:
 
 def can_unlock_slug(user) -> bool:
     return is_admin(user)
+
+
+def can_edit_page(user, page) -> bool:
+    """The Admin, or the one Editor the Page is assigned to."""
+    return is_admin(user) or (page["assigned_editor_id"] is not None
+                              and page["assigned_editor_id"] == user["id"])
+
+
+def can_set_page_draft(user) -> bool:
+    """Editors may Publish their Assigned page but only the Admin takes it down."""
+    return is_admin(user)

@@ -157,3 +157,134 @@ def test_site_is_named_for_the_chapter_and_never_the_starter_names(db_path, auth
     for path, text in site_text(out).items():
         for old in ("Knox County", "Historical Society", "IPHS 400", "Mini-Project"):
             assert old not in text, f"{old!r} found in {path.name}"
+
+
+# --- T07: Pages and Navigation ---------------------------------------------
+
+def add_page(db_path, title, body="Page body.", publish=True, nav=False, order=0,
+             home=False, slug=""):
+    from app import pages
+    pages.init_pages(db_path)
+    return pages.create_page(db_path, title=title, slug=slug, body=body,
+                             assigned_editor_id=None, show_in_nav=nav,
+                             nav_order=order, is_home=home, publish=publish)
+
+
+def nav_links(html):
+    nav = re.search(r"<nav.*?</nav>", html, re.S).group(0)
+    return re.findall(r'<a href="([^"]+)">([^<]+)</a>', nav)
+
+
+def test_published_page_is_rendered_without_author_or_date(db_path, author, tmp_path):
+    add_page(db_path, "Our History", body="Founded long ago.")
+    out = render_site(tmp_path / "site", database=db_path)
+    html = (out / "pages" / "our-history.html").read_text()
+    assert "Founded long ago." in html and "Our History" in html
+    assert "Demo Editor" not in html and not re.search(r"\d{4}-\d{2}-\d{2}", html)
+
+
+def test_navigation_is_home_then_pages_in_order_then_news_on_every_page(
+        db_path, author, tmp_path):
+    add_page(db_path, "Welcome", home=True)
+    add_page(db_path, "Zeta", nav=True, order=1)
+    add_page(db_path, "Alpha", nav=True, order=2)
+    add_page(db_path, "Unlisted", nav=False)
+    add(db_path, author, "A Post")
+    out = render_site(tmp_path / "site", database=db_path)
+    titles = ["Home", "Zeta", "Alpha", "News"]
+    assert [t for _, t in nav_links((out / "index.html").read_text())] == titles
+    assert [t for _, t in nav_links((out / "news.html").read_text())] == titles
+    top = nav_links((out / "index.html").read_text())
+    assert [h for h, _ in top] == ["index.html", "pages/zeta.html",
+                                   "pages/alpha.html", "news.html"]
+    deep = nav_links((out / "posts" / "a-post.html").read_text())
+    assert [h for h, _ in deep] == ["../index.html", "../pages/zeta.html",
+                                    "../pages/alpha.html", "../news.html"]
+    sub = nav_links((out / "pages" / "zeta.html").read_text())
+    assert sub[0][0] == "../index.html" and sub[-1][0] == "../news.html"
+
+
+def test_unlisted_published_page_exists_but_is_not_linked(db_path, author, tmp_path):
+    add_page(db_path, "Rush Info", nav=False)
+    out = render_site(tmp_path / "site", database=db_path)
+    assert (out / "pages" / "rush-info.html").exists()
+    for f in out.rglob("*.html"):
+        if f.name != "rush-info.html":
+            assert "rush-info" not in f.read_text()
+
+
+def test_draft_page_is_absent_everywhere(db_path, author, tmp_path):
+    add_page(db_path, "Secret Page Title", slug="secret-page", publish=False, nav=True)
+    add_page(db_path, "Public Page", nav=True)
+    out = render_site(tmp_path / "site", database=db_path)
+    assert not (out / "pages" / "secret-page.html").exists()
+    for text in site_text(out).values():
+        assert "Secret Page Title" not in text and "secret-page" not in text
+
+
+def test_home_shows_home_page_then_5_latest_posts(db_path, author, tmp_path):
+    add_page(db_path, "Welcome Friends", body="Hello visitors.", home=True)
+    for i in range(6):
+        pid = add(db_path, author, f"Story {i}")
+        with posts.connect(db_path) as conn:
+            conn.execute("update posts set published_at=? where id=?",
+                         (f"2026-01-0{i + 1}T00:00:00+00:00", pid))
+    home = (render_site(tmp_path / "site", database=db_path) / "index.html").read_text()
+    assert "Hello visitors." in home
+    assert home.index("Hello visitors.") < home.index("Story 5") < home.index("Story 1")
+    assert "Story 0" not in home
+
+
+def test_draft_home_page_is_not_shown_on_home(db_path, author, tmp_path):
+    add_page(db_path, "Hidden Welcome", body="Not yet.", home=True, publish=False)
+    add(db_path, author, "A Post")
+    home = (render_site(tmp_path / "site", database=db_path) / "index.html").read_text()
+    assert "Not yet." not in home and "Hidden Welcome" not in home and "A Post" in home
+
+
+def test_page_output_is_relative_and_sanitized(db_path, author, tmp_path):
+    add_page(db_path, "Evil", nav=True, body='<script>alert(1)</script>\n\n'
+             '<img src=x onerror=alert(2)>\n\n[out](https://example.org) ok')
+    out = render_site(tmp_path / "site", database=db_path)
+    for text in site_text(out).values():
+        assert "<script" not in text and "onerror=" not in text
+        assert 'href="/' not in text and 'src="/' not in text
+    assert 'href="../style.css"' in (out / "pages" / "evil.html").read_text()
+
+
+def test_leaked_draft_page_aborts_publish(db_path, author, tmp_path, monkeypatch):
+    from app import publish
+    add_page(db_path, "Leaky Page", slug="leaky-page", publish=False, nav=True)
+    monkeypatch.setattr(publish, "_published_pages",
+                        lambda db: publish._pages_where(db, "1=1"))
+    with pytest.raises(DraftInOutput, match="Leaky Page"):
+        render_site(tmp_path / "site", database=db_path)
+    assert not (tmp_path / "site").exists()
+
+
+def test_cli_summary_lists_pages(db_path, author, tmp_path, monkeypatch, capsys):
+    from app import settings
+    add_page(db_path, "Listed Page")
+    monkeypatch.setattr(settings, "DATABASE_PATH", db_path)
+    monkeypatch.setattr(settings, "SITE", tmp_path / "site")
+    assert main(["publish"]) == 0
+    assert "Listed Page" in capsys.readouterr().out
+
+
+def test_seed_script_adds_a_draft_and_a_published_page(tmp_path, monkeypatch):
+    import importlib.util
+    import sqlite3
+    from app import settings
+    db = tmp_path / "seed.db"
+    monkeypatch.setattr(settings, "DATABASE_PATH", db)
+    monkeypatch.setenv("CMS_ADMIN_PASSWORD", "seed-admin-password")
+    monkeypatch.setenv("CMS_EDITOR_PASSWORD", "seed-editor-password")
+    spec = importlib.util.spec_from_file_location(
+        "seed_demo", settings.ROOT / "scripts" / "seed_demo.py")
+    seed = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(seed)
+    assert seed.main() == 0 and seed.main() == 0  # re-runnable
+    statuses = [r[0] for r in sqlite3.connect(db).execute("select status from pages")]
+    assert "draft" in statuses and "published" in statuses
+    assert sqlite3.connect(db).execute(
+        "select count(*) from pages where is_home=1").fetchone()[0] == 1

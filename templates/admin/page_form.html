@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>{{ title }}</h1>
+  <p><a href="{{ url_for('pages_list') }}">All pages</a></p>
+  {% if page %}
+    <p>Status: <strong data-status="{{ page.status }}">{{ page.status | capitalize }}</strong>
+      · Created {{ page.created_at }} · Updated {{ page.updated_at }}
+      {% if page.published_at %}· Published {{ page.published_at }}{% endif %}</p>
+  {% endif %}
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ '/admin/pages/' ~ page.id if page else '/admin/pages' }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    {% if page %}<input type="hidden" name="page_id" value="{{ page.id }}">{% endif %}
+    <p><label>Title <input name="title" value="{{ form.title }}" required></label></p>
+    <p><label>Slug <input name="slug" value="{{ form.slug }}"{% if not can_edit_slug %} readonly{% endif %}></label>
+      {% if not can_edit_slug %}<small>Locked once a Page has been Published. Ask the Admin to unlock it.</small>{% endif %}</p>
+    <p><label>Body (Markdown)<br><textarea name="body" rows="16" cols="70">{{ form.body }}</textarea></label></p>
+    {% if is_admin %}
+    <p><label>Assigned editor
+      <select name="assigned_editor_id">
+        <option value="">Unassigned (Admin only)</option>
+        {% for e in editors %}<option value="{{ e.id }}"{% if form.assigned_editor_id|string == e.id|string %} selected{% endif %}>{{ e.display_name }}</option>{% endfor %}
+      </select></label></p>
+    <p><label><input type="checkbox" name="show_in_nav"{% if form.show_in_nav %} checked{% endif %}> Show in Navigation</label>
+      <label>Order <input name="nav_order" type="number" value="{{ form.nav_order }}" size="4"></label></p>
+    <p><label><input type="checkbox" name="is_home"{% if form.is_home %} checked{% endif %}> This is the Home page</label>
+      <small>Flagging a different Page moves the flag.</small></p>
+    {% endif %}
+    <p>
+      <button type="submit" name="action" value="save">Save</button>
+      <button type="submit" formaction="/admin/pages/preview" formtarget="_blank">Preview</button>
+      {% if not page or page.status == 'draft' %}<button type="submit" name="action" value="publish">Mark Published</button>{% endif %}
+      {% if can_draft and page.status == 'published' %}<button type="submit" name="action" value="draft">Set back to Draft</button>{% endif %}
+    </p>
+  </form>
+  {% if can_unlock_slug %}
+  <form method="post" action="/admin/pages/{{ page.id }}/unlock-slug">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Unlock Slug</button>
+  </form>
+  {% endif %}
+  {% if is_admin and page %}
+  <form method="post" action="/admin/pages/{{ page.id }}/delete">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Delete page</button>
+  </form>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+  <h1>Pages</h1>
+  <p>{% if is_admin %}<a href="{{ url_for('new_form') }}">New page</a> · {% endif %}<a href="{{ url_for('admin_home') }}">Dashboard</a></p>
+  {% if not pages %}<p>No pages yet.</p>{% endif %}
+  <ul>
+  {% for p in pages %}
+    <li>
+      <strong data-status="{{ p.status }}">{{ p.status | capitalize }}</strong>
+      {% if can_edit(user, p) %}<a href="{{ url_for('edit_form', page_id=p.id) }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}
+      <small>{% if p.editor_name %}assigned to {{ p.editor_name }}{% else %}no Assigned editor (Admin only){% endif %}{% if p.is_home %} · Home{% endif %}{% if p.show_in_nav %} · in Navigation (order {{ p.nav_order }}){% endif %}</small>
+    </li>
+  {% endfor %}
+  </ul>
+{% endblock %}

@@ -19,7 +19,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from app import posts, settings, users  # noqa: E402
+from app import pages, posts, settings, users  # noqa: E402
 
 
 def main() -> int:
@@ -56,7 +56,22 @@ def main() -> int:
         posts.create_post(settings.DATABASE_PATH, author=editor, title=title,
                           slug="", body=body, publish=publish)
         print(f"Created {'Published' if publish else 'Draft'} post: {title}")
-    # TODO (later tickets): demo Pages.
+    pages.init_pages(settings.DATABASE_PATH)
+    existing_pages = {p["slug"] for p in pages.list_pages(settings.DATABASE_PATH)}
+    for title, body, publish, nav, order, home, assign in (
+        ("Welcome", "We are the **Chi Chapter** of Delta Tau Delta at Kenyon College.",
+         True, False, 0, True, False),
+        ("About", "Who we are and what we do.", True, True, 1, False, False),
+        ("Community Service", "Our service work. Dates still to be confirmed.",
+         False, True, 2, False, True),
+    ):
+        if pages.slugify(title) in existing_pages:
+            continue
+        pages.create_page(settings.DATABASE_PATH, title=title, slug="", body=body,
+                          assigned_editor_id=editor["id"] if assign else None,
+                          show_in_nav=nav, nav_order=order, is_home=home,
+                          publish=publish)
+        print(f"Created {'Published' if publish else 'Draft'} page: {title}")
     return 0
 
 

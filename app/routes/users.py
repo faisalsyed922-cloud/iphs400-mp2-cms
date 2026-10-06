@@ -6,7 +6,7 @@ import sqlite3
 from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import RedirectResponse
 
-from app import users
+from app import pages, users
 from app.security import csrf_token, require_admin, verify_csrf
 from app.templating import templates
 
@@ -36,7 +36,8 @@ def users_list(request: Request, user=Depends(require_admin), notice: str = ""):
     db = request.app.state.database
     return render(request, "admin/users.html", title="Users", user=user,
                   users=users.list_users(db), notice=notice,
-                  contact_line=users.get_setting(db, "contact_line"))
+                  contact_line=users.get_setting(db, "contact_line"),
+                  unassigned_pages=pages.count_unassigned(db))
 
 
 @router.get("/new")

@@ -1,6 +1,12 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>{{ title }}{% if subtitle %} <small>{{ subtitle }}</small>{% endif %}</h1>
+  {% if home_page %}
+    <section data-page-id="{{ home_page.id }}">
+      <h2>{{ home_page.title }}</h2>
+      {{ home_page.body | safe }}
+    </section>
+  {% endif %}
   {% if items %}
     {% for item in items %}
     <article data-post-id="{{ item.id }}">

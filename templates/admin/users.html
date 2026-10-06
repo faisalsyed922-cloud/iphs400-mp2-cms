@@ -2,6 +2,7 @@
 {% block content %}
   <h1>Users</h1>
   <p><a href="{{ url_for('user_new') }}">New user</a> · <a href="{{ url_for('admin_home') }}">Dashboard</a></p>
+  {% if unassigned_pages %}<p role="alert">{{ unassigned_pages }} Page{{ '' if unassigned_pages == 1 else 's' }} need{{ 's' if unassigned_pages == 1 else '' }} a new Assigned editor. <a href="{{ url_for('pages_list') }}">Pages</a></p>{% endif %}
   <ul>
   {% for u in users %}
     <li>

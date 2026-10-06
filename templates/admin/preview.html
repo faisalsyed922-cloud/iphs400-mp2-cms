@@ -3,7 +3,7 @@
   <p role="note"><strong>Draft preview, not public</strong></p>
   <article>
     <h1>{{ title }}</h1>
-    <p><em>{{ byline }}</em></p>
+    {% if byline %}<p><em>{{ byline }}</em></p>{% endif %}
     {{ html | safe }}
   </article>
 {% endblock %}

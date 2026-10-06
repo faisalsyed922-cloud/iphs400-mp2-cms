@@ -48,6 +48,10 @@ _Avoid_: Article, update, entry
 An undated, authorless piece of standing content (About, History, Community Service) that can appear in public navigation.
 _Avoid_: Section
 
+**Home page**:
+The one Page flagged as the front door of the public site. Home shows it followed by the 5 latest Posts. Flagging another Page moves the flag; there is always exactly one.
+_Avoid_: Landing page, front page
+
 **Assigned editor**:
 The one Editor, besides the Admin, who may edit a given Page.
 _Avoid_: Page owner

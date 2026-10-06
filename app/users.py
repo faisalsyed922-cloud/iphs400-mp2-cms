@@ -174,6 +174,10 @@ def deactivate_user(database: Path, user_id: int) -> None:
         if _would_orphan_admin(conn, user_id):
             raise LastAdmin
         conn.execute("update users set is_active = 0 where id = ?", (user_id,))
+        if conn.execute("select 1 from sqlite_master where name = 'pages'").fetchone():
+            # their Pages become unassigned, and so Admin-only
+            conn.execute("update pages set assigned_editor_id = null"
+                         " where assigned_editor_id = ?", (user_id,))
 
 
 def current_admin(database: Path) -> sqlite3.Row | None:

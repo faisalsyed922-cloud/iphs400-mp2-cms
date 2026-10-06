@@ -13,7 +13,13 @@ The rubric expects this to run clean on a fresh clone with .env.example values
 from __future__ import annotations
 
 import os
+import sqlite3
 import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+from app import settings, users  # noqa: E402
 
 
 def main() -> int:
@@ -24,9 +30,18 @@ def main() -> int:
               "(copy .env.example).")
         return 1
 
-    # TODO (your tickets): create the users, then the demo content.
-    print("Nothing to seed yet: no content types exist. "
-          "Extend scripts/seed_demo.py as you build T01+.")
+    users.init_db(settings.DATABASE_PATH)
+    for email, name, role, password in (
+        ("admin@example.test", "Demo Admin", "admin", admin_pw),
+        ("editor@example.test", "Demo Editor", "editor", editor_pw),
+    ):
+        try:
+            users.create_user(settings.DATABASE_PATH, email=email,
+                              password=password, role=role, display_name=name)
+            print(f"Created {role} {email}")
+        except sqlite3.IntegrityError:
+            print(f"{email} already exists; left as is")
+    # TODO (later tickets): demo Posts and Pages, including a Draft.
     return 0
 
 

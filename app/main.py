@@ -9,21 +9,36 @@ them here. Keep this file small.
 """
 from __future__ import annotations
 
-from fastapi import FastAPI, Request
-from fastapi.templating import Jinja2Templates
+from pathlib import Path
 
-from app import settings
+from fastapi import Depends, FastAPI, Request
+from fastapi.responses import RedirectResponse
+from starlette.middleware.sessions import SessionMiddleware
 
-templates = Jinja2Templates(directory=str(settings.TEMPLATES))
+from app import settings, users
+from app.routes import auth
+from app.security import SESSION_SECONDS, LoginRequired, csrf_token, current_user
+from app.templating import templates
 
 
-def create_app() -> FastAPI:
+def create_app(database: Path | None = None) -> FastAPI:
     app = FastAPI(title="IPHS 400 MP2 CMS")
+    app.state.database = Path(database or settings.DATABASE_PATH)
+    users.init_db(app.state.database)
+    app.add_middleware(SessionMiddleware, secret_key=settings.SECRET_KEY,
+                       max_age=SESSION_SECONDS, same_site="lax")
+
+    @app.exception_handler(LoginRequired)
+    def send_to_login(request: Request, exc: LoginRequired):
+        return RedirectResponse("/login", status_code=303)
+
+    app.include_router(auth.router)
 
     @app.get("/admin")
-    def admin_home(request: Request):
+    def admin_home(request: Request, user=Depends(current_user)):
         return templates.TemplateResponse(
-            request, "admin/hello.html", {"title": "Admin"}
+            request, "admin/hello.html",
+            {"title": "Admin", "user": user, "csrf_token": csrf_token(request)}
         )
 
     @app.get("/")

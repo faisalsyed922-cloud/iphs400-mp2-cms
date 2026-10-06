@@ -3,14 +3,17 @@
     uv run cms serve      # admin console + public preview at http://localhost:8000
     uv run cms publish    # render site/ from published content
     uv run cms deploy     # push site/ to the gh-pages branch (Pages serves it)
+    uv run cms create-admin EMAIL   # make an Admin; asks for the password
 """
 from __future__ import annotations
 
 import argparse
+import getpass
+import sqlite3
 import subprocess
 import sys
 
-from app import settings
+from app import settings, users
 from app.publish import render_site
 
 
@@ -23,9 +26,32 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("publish", help="render site/ from published content")
     deploy = sub.add_parser("deploy", help="push site/ to gh-pages")
     deploy.add_argument("--message", default="Publish site")
+    create = sub.add_parser("create-admin", help="create an Admin account")
+    create.add_argument("email")
+    create.add_argument("--name", default="Admin", help="display name")
     args = parser.parse_args(argv)
 
+    if args.command == "create-admin":
+        password = getpass.getpass("Password: ")
+        if password != getpass.getpass("Password again: "):
+            print("The passwords did not match; nothing was created.")
+            return 1
+        users.init_db(settings.DATABASE_PATH)
+        try:
+            users.create_user(settings.DATABASE_PATH, email=args.email,
+                              password=password, role="admin",
+                              display_name=args.name)
+        except sqlite3.IntegrityError:
+            print(f"{args.email} already has an account.")
+            return 1
+        print(f"Created Admin {args.email}.")
+        return 0
+
     if args.command == "serve":
+        if settings.SECRET_KEY == settings.DEV_SECRET_KEY:
+            print("CMS_SECRET_KEY is not set (copy .env.example to .env and "
+                  "change it). Refusing to serve with the public dev key.")
+            return 1
         import uvicorn
 
         uvicorn.run("app.main:app", port=args.port, reload=args.reload)

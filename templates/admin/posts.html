@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>Posts</h1>
-  <p><a href="/admin/posts/new">New post</a> · <a href="/admin">Dashboard</a></p>
+  <p><a href="{{ url_for('new_form') }}">New post</a> · <a href="{{ url_for('admin_home') }}">Dashboard</a></p>
   {% if not posts %}<p>No posts yet.</p>{% endif %}
   <ul>
   {% for p in posts %}
     <li>
       <strong data-status="{{ p.status }}">{{ p.status | capitalize }}</strong>
-      {% if can_edit(user, p) %}<a href="/admin/posts/{{ p.id }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}
+      {% if can_edit(user, p) %}<a href="{{ url_for('edit_form', post_id=p.id) }}">{{ p.title }}</a>{% else %}{{ p.title }}{% endif %}
       <small>by {{ p.author_name }}</small>
     </li>
   {% endfor %}

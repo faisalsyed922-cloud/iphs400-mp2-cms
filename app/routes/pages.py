@@ -7,6 +7,7 @@ from fastapi.responses import RedirectResponse
 
 from app import authz, pages, posts
 from app.markdown import render_markdown
+from app.publish import navigation
 from app.security import csrf_token, current_user, require_admin, verify_csrf
 from app.templating import templates
 
@@ -41,8 +42,7 @@ def render_form(request: Request, user, *, page=None, form=None, error=None,
          "form": form, "error": error, "csrf_token": csrf_token(request),
          "is_admin": authz.is_admin(user), "editors": pages.active_editors(db),
          "can_edit_slug": authz.can_edit_slug(user, page) if page else True,
-         "can_unlock_slug": bool(page and page["slug_locked"] and authz.is_admin(user)),
-         "can_draft": bool(page and authz.can_set_page_draft(user))},
+         "can_unlock_slug": bool(page and page["slug_locked"] and authz.is_admin(user)),},
         status_code=status_code)
 
 
@@ -86,7 +86,8 @@ def preview(request: Request, user=Depends(current_user), title: str = Form(""),
         raise HTTPException(403, "Only the Admin can create Pages.")
     return templates.TemplateResponse(
         request, "admin/preview.html",
-        {"title": title or "Untitled", "html": render_markdown(body), "byline": None})
+        {"title": title or "Untitled", "html": render_markdown(body), "byline": None,
+         "nav_links": navigation(request.app.state.database), "nav_preview": True})
 
 
 @router.post("", dependencies=admin_guarded)
@@ -127,8 +128,6 @@ def save(request: Request, page_id: int, user=Depends(current_user),
     page = load_page(request, user, page_id)
     if action not in ACTIONS:
         raise HTTPException(400, "Unknown action.")
-    if action == "draft" and not authz.can_set_page_draft(user):
-        raise HTTPException(403, "Only the Admin can set a Page back to Draft.")
     form = {"title": title, "slug": slug, "body": body,
             "assigned_editor_id": assigned_editor_id, "show_in_nav": show_in_nav,
             "nav_order": nav_order, "is_home": is_home}

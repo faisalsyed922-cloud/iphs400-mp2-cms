@@ -30,7 +30,7 @@
       <button type="submit" name="action" value="save">Save</button>
       <button type="submit" formaction="/admin/pages/preview" formtarget="_blank">Preview</button>
       {% if not page or page.status == 'draft' %}<button type="submit" name="action" value="publish">Mark Published</button>{% endif %}
-      {% if can_draft and page.status == 'published' %}<button type="submit" name="action" value="draft">Set back to Draft</button>{% endif %}
+      {% if page and page.status == 'published' %}<button type="submit" name="action" value="draft">Set back to Draft</button>{% endif %}
     </p>
   </form>
   {% if can_unlock_slug %}

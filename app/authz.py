@@ -30,7 +30,3 @@ def can_edit_page(user, page) -> bool:
     return is_admin(user) or (page["assigned_editor_id"] is not None
                               and page["assigned_editor_id"] == user["id"])
 
-
-def can_set_page_draft(user) -> bool:
-    """Editors may Publish their Assigned page but only the Admin takes it down."""
-    return is_admin(user)

@@ -124,15 +124,24 @@ def test_editor_form_hides_admin_controls(client_as):
     assert "Mark Published" in html
 
 
-def test_assigned_editor_can_mark_published_but_not_back_to_draft(client_as, db_path):
+def test_assigned_editor_can_publish_and_set_their_page_back_to_draft(client_as, db_path):
     a, e = client_as("admin"), client_as("editor")
     pid = page_id_of(save_page(a, assigned_editor_id=str(EDITOR_ID)))
     save_page(e, page_id=pid, action="publish")
     assert row(db_path, pid, "status") == "published"
-    assert save_page(e, page_id=pid, action="draft").status_code == 403
-    assert row(db_path, pid, "status") == "published"
+    assert "Set back to Draft" in e.get(f"/admin/pages/{pid}").text
+    assert save_page(e, page_id=pid, action="draft").status_code == 303
+    assert row(db_path, pid, "status") == "draft"
+    save_page(a, page_id=pid, action="publish")
     save_page(a, page_id=pid, action="draft")
     assert row(db_path, pid, "status") == "draft"
+
+
+def test_other_editor_cannot_set_a_page_back_to_draft(client_as, other_editor, db_path):
+    pid = page_id_of(save_page(client_as("admin"), assigned_editor_id=str(EDITOR_ID),
+                               action="publish"))
+    assert save_page(other_editor, page_id=pid, action="draft").status_code == 403
+    assert row(db_path, pid, "status") == "published"
 
 
 def test_other_editor_cannot_publish_a_page_by_direct_post(client_as, other_editor, db_path):
@@ -246,3 +255,29 @@ def test_every_page_post_needs_a_csrf_token(client_as):
 def test_anonymous_is_redirected_to_login(client, path):
     r = client.get(path, follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == "/login"
+
+
+# --- Preview shows the real Navigation --------------------------------------
+
+def nav_labels(html):
+    nav = re.search(r"<nav>.*?</nav>", html, re.S)
+    assert nav, "preview has no navigation"
+    return re.findall(r"<span>([^<]+)</span>", nav.group(0))
+
+
+def test_page_and_post_preview_show_the_published_navigation_in_order(client_as):
+    a = client_as("admin")
+    save_page(a, title="Welcome")  # Home
+    save_page(a, title="Second", show_in_nav="on", nav_order="2", action="publish")
+    save_page(a, title="First", show_in_nav="on", nav_order="1", action="publish")
+    save_page(a, title="Draft Nav", show_in_nav="on", nav_order="0")
+    save_page(a, title="Unlisted", action="publish")
+    expected = ["Home", "First", "Second", "News"]
+    page_preview = a.post("/admin/pages/preview", data={
+        "title": "t", "body": "b", "csrf_token": csrf(a)}).text
+    assert nav_labels(page_preview) == expected
+    post_preview = a.post("/admin/posts/preview", data={
+        "title": "t", "body": "b", "csrf_token": csrf(a)}).text
+    assert nav_labels(post_preview) == expected
+    assert "Draft preview, not public" in post_preview
+    assert 'href="pages/' not in page_preview  # preview links must not point at the site

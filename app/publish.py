@@ -131,6 +131,16 @@ def render(out: Path | None = None, database: Path | None = None) -> tuple[Path,
     return out, items
 
 
+def navigation(database: Path) -> list[tuple[str, str]]:
+    """Navigation as (label, site-relative href): Home, then the Published Pages
+    marked for it in order, then News. The Publish run and Preview share this."""
+    return ([("Home", "index.html")]
+            + [(p["title"], f"pages/{p['slug']}.html")
+               for p in _published_pages(database)
+               if p["show_in_nav"] and not p["is_home"]]
+            + [("News", "news.html")])
+
+
 def _render_into(work: Path, database: Path) -> list[str]:
     env = environment()
     published = _published_posts(database)
@@ -153,16 +163,12 @@ def _render_into(work: Path, database: Path) -> list[str]:
             "href": f"pages/{page['slug']}.html", "in_nav": bool(page["show_in_nav"]),
             "is_home": bool(page["is_home"])})
     home_page = next((p for p in page_entries if p["is_home"]), None)
-    # Navigation: Home, then Pages marked for it (already in order), then News.
-    nav_pages = [p for p in page_entries if p["in_nav"] and not p["is_home"]]
 
     (work / "style.css").write_text(CSS)
     (work / "posts").mkdir()
     (work / "pages").mkdir()
 
-    links = ([("Home", "index.html")]
-             + [(p["title"], p["href"]) for p in nav_pages]
-             + [("News", "news.html")])
+    links = navigation(database)
 
     def write(path: str, template: str, prefix: str, **ctx) -> None:
         # prefix is "" for top-level pages and "../" for pages in posts/ and pages/

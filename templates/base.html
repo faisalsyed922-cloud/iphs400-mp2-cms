@@ -8,7 +8,7 @@
 </head>
 <body>
   <header><a href="{{ home_path | default('index.html') }}">{{ title }}</a>{% if subtitle %} <span class="subtitle">{{ subtitle }}</span>{% endif %}
-    {% if nav_links %}<nav>{% for label, href in nav_links %}<a href="{{ href }}">{{ label }}</a>{% if not loop.last %} · {% endif %}{% endfor %}</nav>{% endif %}
+    {% if nav_links %}<nav>{% for label, href in nav_links %}{% if nav_preview %}<span>{{ label }}</span>{% else %}<a href="{{ href }}">{{ label }}</a>{% endif %}{% if not loop.last %} · {% endif %}{% endfor %}</nav>{% endif %}
   </header>
   <main>{% block content %}{% endblock %}</main>
 </body>

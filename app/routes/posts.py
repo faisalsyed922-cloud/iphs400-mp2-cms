@@ -6,6 +6,7 @@ from fastapi.responses import RedirectResponse
 
 from app import authz, posts, users
 from app.markdown import render_markdown
+from app.publish import navigation
 from app.security import csrf_token, current_user, verify_csrf
 from app.templating import templates
 
@@ -71,7 +72,8 @@ def preview(request: Request, user=Depends(current_user), title: str = Form(""),
     return templates.TemplateResponse(
         request, "admin/preview.html",
         {"title": title or "Untitled", "html": render_markdown(body),
-         "byline": byline})
+         "byline": byline, "nav_links": navigation(request.app.state.database),
+         "nav_preview": True})
 
 
 @router.post("", dependencies=guarded)

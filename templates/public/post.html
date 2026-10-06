@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block title %}{{ post.title }}{% endblock %}
+{% block content %}
+  <article>
+    <h1>{{ post.title }}</h1>
+    <p><small>{{ post.date }}{% if post.byline %} · {{ post.byline }}{% endif %}</small></p>
+    {{ post.body | safe }}
+  </article>
+{% endblock %}

@@ -14,7 +14,7 @@ import subprocess
 import sys
 
 from app import settings, users
-from app.publish import render_site
+from app.publish import DraftInOutput, render
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -58,7 +58,14 @@ def main(argv: list[str] | None = None) -> int:
         return 0
 
     if args.command == "publish":
-        out = render_site()
+        try:
+            out, items = render()
+        except DraftInOutput as exc:
+            print(exc)
+            return 1
+        print("Rendered:")
+        for item in items:
+            print(f"  - {item}")
         print(f"Wrote {out}. Preview it with:  python3 -m http.server -d {out} 8001")
         return 0
 

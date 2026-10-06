@@ -2,7 +2,14 @@
 {% block content %}
   <h1>{{ title }}</h1>
   {% if items %}
-    <ul>{% for item in items %}<li><a href="{{ item.href }}">{{ item.title }}</a></li>{% endfor %}</ul>
+    {% for item in items %}
+    <article>
+      <h2><a href="{{ item.href }}">{{ item.title }}</a></h2>
+      <p><small>{{ item.date }}</small></p>
+      {{ item.excerpt | safe }}
+    </article>
+    {% endfor %}
+    <p><a href="{{ news_path | default('news.html') }}">All news</a></p>
   {% else %}
     <p>Nothing published yet.</p>
   {% endif %}

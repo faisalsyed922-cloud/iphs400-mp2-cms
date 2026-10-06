@@ -15,7 +15,7 @@ def test_seeded_users_log_in_and_reach_the_console(client_as):
     for role in ("admin", "editor"):
         response = client_as(role).get("/admin")
         assert response.status_code == 200
-        assert "hello admin" in response.text.lower()
+        assert "dashboard" in response.text.lower()
 
 
 def test_wrong_password_and_unknown_email_get_the_same_refusal(client):
@@ -35,7 +35,7 @@ def test_anonymous_admin_request_redirects_to_login(client):
     response = client.get("/admin", follow_redirects=False)
     assert response.status_code in (302, 303)
     assert response.headers["location"].endswith("/login")
-    assert "hello admin" not in response.text.lower()
+    assert "dashboard" not in response.text.lower()
 
 
 def test_logout_ends_the_session(client_as):

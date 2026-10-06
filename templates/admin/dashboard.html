@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "admin/_items.html" import styles, row %}
+{% block head %}{{ styles() }}{% endblock %}
+{% block content %}
+  <h1>Dashboard</h1>
+  <p>Signed in as {{ user.display_name }} ({{ user.role }}).</p>
+  <p><a href="{{ url_for('content_list') }}">All content</a> · <a href="{{ url_for('content_list') }}?mine=1">Mine</a> · <a href="{{ url_for('new_form') }}">New post</a> · <a href="{{ url_for('list_view') }}">Posts</a> · <a href="{{ url_for('pages_list') }}">Pages</a>{% if is_admin %} · <a href="{{ url_for('users_list') }}">Users</a>{% endif %}</p>
+
+  <section data-section="pending">
+    <h2>Pending release</h2>
+    {% if not pending %}<p>Nothing is waiting for release.</p>{% endif %}
+    <ul class="items">{% for i in pending %}{{ row(i, user, can_edit) }}{% endfor %}</ul>
+  </section>
+
+  <section data-section="drafts">
+    <h2>Drafts waiting</h2>
+    {% if not drafts %}<p>No Drafts.</p>{% endif %}
+    <ul class="items">{% for i in drafts %}{{ row(i, user, can_edit) }}{% endfor %}</ul>
+  </section>
+
+  <section data-section="recent">
+    <h2>My recent items</h2>
+    {% if not recent %}<p>You have no items yet.</p>{% endif %}
+    <ul class="items">{% for i in recent %}{{ row(i, user, can_edit) }}{% endfor %}</ul>
+  </section>
+
+  {% if unassigned is not none %}
+  <section data-section="unassigned">
+    <h2>Pages needing an Assigned editor</h2>
+    {% if not unassigned %}<p>Every Page has an Assigned editor.</p>{% endif %}
+    <ul>{% for p in unassigned %}<li><a href="/admin/pages/{{ p.id }}">{{ p.title }}</a></li>{% endfor %}</ul>
+  </section>
+  {% endif %}
+
+  <form method="post" action="/logout">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+    <button type="submit">Log out</button>
+  </form>
+{% endblock %}

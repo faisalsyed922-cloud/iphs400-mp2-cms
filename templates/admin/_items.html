@@ -1,0 +1,23 @@
+{% macro styles() %}
+<style>
+  .badge { display: inline-block; padding: .3em .8em; border-radius: 1em; font-weight: bold; font-size: 1.1em; color: #fff; }
+  .badge-draft { background: #8a5a00; }
+  .badge-published { background: #17692d; }
+  .changed-since-deploy { background: #fff3c4; color: #5c4400; padding: .1em .5em; border-radius: .3em; font-size: .85em; }
+  ul.items { list-style: none; padding: 0; }
+  ul.items li { padding: .6em 0; border-bottom: 1px solid #ddd; display: flex; flex-wrap: wrap; gap: .5em; align-items: center; }
+  .filters { display: flex; flex-wrap: wrap; gap: .5em; align-items: end; }
+  .filters select, .filters button, .filters a { font-size: 1em; padding: .4em .6em; }
+  @media (max-width: 600px) { main { padding: 0 .5rem; } .filters label { width: 100%; } }
+</style>
+{% endmacro %}
+
+{% macro row(item, user, can_edit) %}
+  <li>
+    <span class="badge badge-{{ item.status }}">{{ item.status | capitalize }}</span>
+    <span>{{ item.kind | capitalize }}</span>
+    {% if can_edit(user, item) %}<a href="/admin/{{ 'posts' if item.kind == 'post' else 'pages' }}/{{ item.id }}">{{ item.title }}</a>{% else %}<span>{{ item.title }}</span>{% endif %}
+    <small>{% if item.owner_name %}{{ 'by' if item.kind == 'post' else 'assigned to' }} {{ item.owner_name }}{% else %}no Assigned editor{% endif %}</small>
+    {% if item.changed %}<span class="changed-since-deploy">changed since last Deploy</span>{% endif %}
+  </li>
+{% endmacro %}

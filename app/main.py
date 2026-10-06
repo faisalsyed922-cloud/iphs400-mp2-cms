@@ -11,12 +11,12 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 
 from app import pages, posts, settings, users
-from app.routes import auth, pages as pages_routes, posts as posts_routes, user_password, users as users_routes
-from app.security import SESSION_SECONDS, SkewTolerantSessionMiddleware, AdminRequired, LoginRequired, PasswordChangeRequired, csrf_token, current_user
+from app.routes import auth, dashboard, pages as pages_routes, posts as posts_routes, user_password, users as users_routes
+from app.security import SESSION_SECONDS, SkewTolerantSessionMiddleware, AdminRequired, LoginRequired, PasswordChangeRequired
 from app.templating import templates
 
 
@@ -49,15 +49,9 @@ def create_app(database: Path | None = None) -> FastAPI:
     app.include_router(auth.router)
     app.include_router(user_password.router)
     app.include_router(users_routes.router)
+    app.include_router(dashboard.router)
     app.include_router(posts_routes.router)
     app.include_router(pages_routes.router)
-
-    @app.get("/admin")
-    def admin_home(request: Request, user=Depends(current_user)):
-        return templates.TemplateResponse(
-            request, "admin/hello.html",
-            {"title": "Admin", "user": user, "csrf_token": csrf_token(request)}
-        )
 
     @app.get("/")
     def public_home(request: Request):

@@ -8,24 +8,59 @@ Save in the repo as `notes/report-scratch.md`.
 ## Drift (report Q2 — need ONE real instance)
 <!-- What drifted? (renamed field, dropped rule, extra feature) Which catch found it: CONTEXT.md mismatch / wrong test / /code-review? Ticket #? -->
 
--
+- **Grill Q21: it merged `cms publish` and `cms deploy` into one command.** Its recommendation was "render, show summary, ask y/N, then push" all in `cms publish`. But the manual (Part 7) and the template already have two separate commands, and required capability #7 says `cms publish` writes `site/`. I caught it by comparing against the manual before it reached the spec, and told it to keep the split. Claude checked `app/cli.py`, confirmed `publish` and `deploy` were already separate subcommands, admitted it had muddled it, and updated CONTEXT.md ("Publish run" = render + check, new term "Deploy", "Live" = as of latest Deploy). Cheapest possible catch: no code written yet.
 
 ## Model failures (README — need ONE)
 <!-- What it got wrong, how you noticed, what you did -->
 
--
+- **Grill batched questions.** The manual says `/grill-with-docs` asks one question at a time; round 1 dumped 8 questions at once with recommendations. Easier to rubber-stamp everything that way. I answered each one separately and overrode three.
+
+## Setup snags (minor)
+
+- Transcript hook names files `your-name` unless `CMS_STUDENT` is set in `.env` — not mentioned in the manual. Added `CMS_STUDENT=Faisal Syed` and renamed the saved transcripts.
 
 ## Prompts I actually used (README — need TWO, quoted exactly)
 
 1. `/tdd Implement decide() in .claude/hooks/ctx_guard.py so the failing tests in tests/test_ctx_guard.py pass. Do not change the tests.`
    → Worked: 10/10 green, tests untouched (verified with `git diff --stat`).
-2. `Commit and push everything with the message "setup: template configured, T00 green". First show me git status and confirm .env and cms.db are not being committed.`
-   → Claude checked `git check-ignore` and a dry-run `git add -A` before committing. Adding the safety check to the prompt made it verify, not assume.
+2. Grill round 3 answer (sent to `/grill-with-docs`):
+   > q17: add an optional event date, because many of our posts are events like rush and philanthropy. q21: keep the templates split. cms publish renders site/ and shows the summary, and refuses if a draft would show up. cms deploy pushes to gh-pages and asks me to confirm first. dont merge them, the manual and grader expect both. the repo is public, so keep unapproved photos out of the image folder. yes on everything else
+
+   → Caught the Q21 drift (see Drift section) and overrode Q17. Claude confirmed the template already split the commands and fixed CONTEXT.md.
+   → **Honesty note for the AI Use Statement:** I worked through the project with a separate Claude chat as a guide, and the q21 wording was drafted there with me before I sent it. Say so in the README.
+
+3. (backup) `Commit and push everything with the message "setup: template configured, T00 green". First show me git status and confirm .env and cms.db are not being committed.`
+   → Claude checked `git check-ignore` and a dry-run `git add -A` before committing.
 
 ## Grill decisions that were MINE (report Q1)
 <!-- Especially where you overrode the recommendation. What it suggested → what you chose → why -->
 
--
+Round 1 (8 questions):
+- **Q1 OVERRIDE — who edits Pages.** It recommended admin-only Pages. I said the community service chair should handle the Community Service page and the alumni relations chair the History page. As president I don't want to be the sole person who can make changes — that's the exact problem we have now with one alum running the old site.
+- **Q4 — publishing.** Editors can mark their own posts published, but I give final approval: only I run `cms publish`.
+- **Q5 OVERRIDE (partial) — bylines.** It suggested display name + optional title. I want full name AND title AND the year of their term, because people change positions every year and "Secretary" alone would point to the wrong person later.
+- **Q8 OVERRIDE — images.** It recommended no images this version. I want images: it's a fraternity site and social chairs will want event and service photos.
+- **Q8 follow-up — how images work.** Claude laid out the risks of real uploads: SVG can carry script, phone photos carry GPS location (the personal-info must-not), and stripping it needs a new dependency (Pillow). Chose (b): an admin-managed image folder, referenced by relative path; only images used by Published content get copied at publish. Tradeoff: I'm the one who adds photos, against my Q1 reason. Uploads = stretch goal.
+
+Round 2 (Q9–Q15) — accepted all:
+- Q9 assigned editors can publish a Page but not delete it; only Admin creates/deletes Pages.
+- Q10 pages assigned to a person, not a position; deactivating them leaves the page unassigned with a warning. (Means re-assigning by hand every May.)
+- Q11 byline title + term is a snapshot at first publish, so my term-year idea doesn't rewrite old posts.
+- Q12 editors see everything but other people's items are read-only — answers my field-note worry about editors deleting each other's posts. No categories/tags/bulk actions; status is a big colored badge (my "status is hard to see" note).
+- Q15 permission wall names the current Admin and a chapter contact — straight from my WordPress note that the error page didn't say who the admin was.
+- Claude split "Published" (editor sets it) from "Live" (actually on the site) as two terms in CONTEXT.md.
+
+Round 3 (Q16–Q21):
+- Q16 accepted: editing a Live item changes it in place; "changed since last release" marker; my review of the publish summary is the gate.
+- **Q17 OVERRIDE — event date.** It recommended no event date (write it in the body). I added an optional event date because a lot of our posts are events like rush and philanthropy.
+- Q18 accepted: Home is a flagged Page + 5 latest posts; News lists all posts on one page.
+- Q19 accepted: 12-char minimum, argon2, lock 10 min after 5 failures, 8-hour sessions, admin resets editor passwords, `cms reset-password` for the admin.
+- Q20 accepted: `cms create-admin`, `cms backup` outside the repo, handover checklist in README (fixes the "what if the president graduates" problem).
+- **Q21 OVERRIDE — keep publish/deploy split** (see Drift section).
+- Final recap confirmed. Claude added 4 unasked defaults (event date shown separately, deploy fingerprints for "changed", deploy refuses stale site/, glossary terms) and asked me to veto any.
+- No new ADRs: Claude said none of these met the bar (all follow from ADR-001 or are easy to reverse).
+
+Accepted in Round 1: Q2 (shared machine, admin runs publish, remote access as stretch goal), Q3 (deactivate never delete, last admin can't be removed), Q6 (pages: nav order + show-in-nav, admin sets), Q7 (slug locked after first publish).
 
 ## /code-review pushback (A5)
 <!-- Findings you disagreed with + your reason. Ticket # -->

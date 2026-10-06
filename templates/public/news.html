@@ -2,7 +2,7 @@
 {% block content %}
   <h1>News</h1>
   {% if items %}
-    <ul>{% for item in items %}<li><a href="{{ item.href }}">{{ item.title }}</a> <small>{{ item.date }}</small></li>{% endfor %}</ul>
+    <ul>{% for item in items %}<li data-post-id="{{ item.id }}"><a href="{{ item.href }}">{{ item.title }}</a> <small>{{ item.date }}</small></li>{% endfor %}</ul>
   {% else %}
     <p>Nothing published yet.</p>
   {% endif %}

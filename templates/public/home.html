@@ -3,7 +3,7 @@
   <h1>{{ title }}</h1>
   {% if items %}
     {% for item in items %}
-    <article>
+    <article data-post-id="{{ item.id }}">
       <h2><a href="{{ item.href }}">{{ item.title }}</a></h2>
       <p><small>{{ item.date }}</small></p>
       {{ item.excerpt | safe }}

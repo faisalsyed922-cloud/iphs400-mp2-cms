@@ -64,27 +64,28 @@ def _first_paragraph(html: str) -> str:
     return match.group(0) if match else ""
 
 
-def _check_no_drafts(site: Path, database: Path, published: list) -> None:
-    """Refuse if a Draft's page, link or heading made it into the site.
+def _check_no_drafts(site: Path, database: Path) -> None:
+    """Refuse if any Draft made it into any page of the site.
 
-    Matches the Draft's Slug as a post file or link, and its title only as
-    a post page's heading, so a Draft called "News" does not trip over
-    ordinary words on other pages.
+    Every post entry carries a data-post-id marker and links to
+    posts/<slug>.html. Both are compared with the Drafts straight from the
+    database (ids and Slugs are unique), on every file, so a Draft leaking onto
+    Home or News is caught as surely as one on its own page. Titles are not
+    matched: a Draft called "News" must not block every publish.
     """
-    ok_slugs = {p["slug"] for p in published}
-    texts = {f: f.read_text() for f in site.rglob("*") if f.is_file()}
-    for draft in _draft_rows(database):
-        title, slug = draft["title"], draft["slug"]
-        for f, text in texts.items():
-            leaked_slug = slug not in ok_slugs and (
-                f"posts/{slug}.html" in text or f == site / "posts" / f"{slug}.html")
-            leaked_title = (f.parent == site / "posts" and slug not in ok_slugs
-                            and f"<h1>{escape(title)}</h1>" in text)
-            if leaked_slug or leaked_title:
+    drafts = _draft_rows(database)
+    for f in sorted(site.rglob("*")):
+        if not f.is_file():
+            continue
+        text = f.read_text()
+        marked = {int(i) for i in re.findall(r'data-post-id="(\d+)"', text)}
+        for draft in drafts:
+            if (draft["id"] in marked or f"posts/{draft['slug']}.html" in text
+                    or f.name == f"{draft['slug']}.html" and f.parent.name == "posts"):
                 raise DraftInOutput(
-                    f"Refusing to publish: the Draft \"{title}\" would appear in "
-                    f"{f.relative_to(site)}. Drafts must never leave the database. "
-                    "The site was not written.")
+                    f"Refusing to publish: the Draft \"{draft['title']}\" would "
+                    f"appear in {f.relative_to(site)}. Drafts must never leave the "
+                    "database. The site was not written.")
 
 
 def render(out: Path | None = None, database: Path | None = None) -> tuple[Path, list[str]]:
@@ -117,7 +118,7 @@ def _render_into(work: Path, database: Path) -> list[str]:
     for post in published:
         body = render_markdown(post["body"])
         entries.append({
-            "title": post["title"], "slug": post["slug"], "body": body,
+            "id": post["id"], "title": post["title"], "slug": post["slug"], "body": body,
             "excerpt": _first_paragraph(body),
             "date": (post["published_at"] or "")[:10],
             "byline": format_byline(post["byline_name"], post["byline_title"],
@@ -140,7 +141,7 @@ def _render_into(work: Path, database: Path) -> list[str]:
     write("news.html", "public/news.html", "", items=entries)
     for e in entries:
         write(e["href"], "public/post.html", "../", post=e)
-    _check_no_drafts(work, database, published)
+    _check_no_drafts(work, database)
     return ["Home (index.html)", "News (news.html)"] + [
         f"Post: {e['title']} ({e['href']})" for e in entries]
 

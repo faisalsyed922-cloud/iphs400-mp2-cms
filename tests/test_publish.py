@@ -92,18 +92,37 @@ def test_no_email_or_login_in_output(db_path, author, tmp_path):
         assert "editor@example.test" not in text
 
 
-def test_leaked_draft_aborts_and_leaves_no_half_site(db_path, author, tmp_path, monkeypatch):
-    add(db_path, author, "Fine")
-    add(db_path, author, "Leaky Draft", slug="leaky", publish=False)
+def leak_drafts(monkeypatch):
+    """Make the renderer treat every post, Drafts included, as Published."""
     from app import publish
-    real = publish.render_markdown
-    monkeypatch.setattr(publish, "render_markdown",
-                        lambda t: real(t) + "<h1>Leaky Draft</h1>")  # simulates a leak
+    monkeypatch.setattr(publish, "_published_posts",
+                        lambda db: publish._posts_where(db, "1=1"))
+
+
+def test_leaked_draft_aborts_and_leaves_no_half_site(db_path, author, tmp_path, monkeypatch):
+    add(db_path, author, "Leaky Draft", slug="leaky", publish=False)
+    leak_drafts(monkeypatch)
     out = tmp_path / "site"
     with pytest.raises(DraftInOutput) as exc:
         render_site(out, database=db_path)
-    assert "Draft" in str(exc.value)
+    assert "Leaky Draft" in str(exc.value) and "Draft" in str(exc.value)
     assert not out.exists()
+
+
+def test_guard_catches_a_draft_on_the_home_page_alone(db_path, author, tmp_path):
+    """Home is where people look; the guard must cover it, not just post pages."""
+    from app.publish import _check_no_drafts
+    pid = add(db_path, author, "Hidden Plans", slug="hidden", publish=False)
+    site = tmp_path / "site"
+    (site / "posts").mkdir(parents=True)
+    (site / "news.html").write_text("<p>clean</p>")
+    for leak in (f'<article data-post-id="{pid}"><h2>x</h2></article>',
+                 '<a href="posts/hidden.html">x</a>'):
+        (site / "index.html").write_text(leak)
+        with pytest.raises(DraftInOutput, match="index.html"):
+            _check_no_drafts(site, db_path)
+    (site / "index.html").write_text("<p>clean</p>")
+    _check_no_drafts(site, db_path)  # no raise
 
 
 def test_cli_summary_lists_items_and_refuses_on_leak(db_path, author, tmp_path,
@@ -114,9 +133,8 @@ def test_cli_summary_lists_items_and_refuses_on_leak(db_path, author, tmp_path,
     monkeypatch.setattr(settings, "SITE", tmp_path / "site")
     assert main(["publish"]) == 0
     assert "Listed Post" in capsys.readouterr().out
-    from app import publish
-    monkeypatch.setattr(publish, "render_markdown", lambda t: "<h1>Draft-Leak</h1>")
     add(db_path, author, "Draft-Leak", slug="dl", publish=False)
+    leak_drafts(monkeypatch)
     assert main(["publish"]) == 1
     assert "Draft" in capsys.readouterr().out
 

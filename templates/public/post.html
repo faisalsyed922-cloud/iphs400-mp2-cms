@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block title %}{{ post.title }}{% endblock %}
 {% block content %}
-  <article>
+  <article data-post-id="{{ post.id }}">
     <h1>{{ post.title }}</h1>
     <p><small>{{ post.date }}{% if post.byline %} · {{ post.byline }}{% endif %}</small></p>
     {{ post.body | safe }}

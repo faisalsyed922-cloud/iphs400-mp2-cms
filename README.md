@@ -17,6 +17,43 @@ cp .env.example .env
 uv run cms serve        # then open http://localhost:8000/admin  -> "T00: hello admin"
 ```
 
+## Publish, then deploy
+
+Nothing is Live until the Admin has done both steps, in this order:
+
+1. `uv run cms publish` renders every Published Post into `site/` and lists what
+   was rendered. It refuses if any Draft would appear. Open `site/` locally and look.
+2. `uv run cms deploy` asks "Push site/ to gh-pages and make it Live? [y/N]".
+   Anything but `y` pushes nothing. On `y` it pushes only `site/` to the `gh-pages`
+   branch; the database, `.env` and keys never leave your machine. A successful
+   Deploy is recorded with its time; a declined or failed one is not.
+
+If `site/` does not exist, `cms deploy` tells you to run `cms publish` first. It
+also stops if any page uses a root-absolute path (`href="/..."`), which would break
+on the GitHub Pages project URL.
+
+One-time setup: in GitHub, Settings -> Pages -> Deploy from a branch -> `gh-pages` /
+root. The site is served over HTTPS at `https://<owner>.github.io/<repo>/`; set
+`CMS_BASE_PATH` in `.env` to that URL.
+
+## Handover checklist (outgoing Admin)
+
+Hand your successor these three things, then do the steps in order:
+
+- [ ] **The repository.** Add them as a collaborator on the GitHub repo (or transfer it).
+- [ ] **The database.** `cms.db` is not in git. Copy it to their machine (it holds all
+      Users, Posts and Pages), along with the values from your `.env` (never commit it).
+- [ ] **The image folder.** Copy the admin-managed image folder; its photos are public
+      once pushed, so only hand over approved ones.
+
+Then:
+
+1. In the console, promote your successor to Admin.
+2. Have them log in and confirm they see Users management.
+3. Only then Deactivate your own account. Promote first, so the site is never
+   without an Admin (the last active Admin cannot be Deactivated).
+4. They run `uv run cms publish` and `uv run cms deploy` once to check the workflow.
+
 ## What is here
 
 ```text

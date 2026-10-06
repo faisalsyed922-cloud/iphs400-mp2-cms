@@ -10,22 +10,22 @@ from __future__ import annotations
 import argparse
 import getpass
 import sqlite3
-import subprocess
-import sys
 
-from app import settings, users
+from app import deploy, settings, users
 from app.publish import DraftInOutput, render
 
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, push=deploy.push_site,
+         confirm=input) -> int:
+    """`push` and `confirm` are seams: tests stub them so nothing touches gh-pages."""
     parser = argparse.ArgumentParser(prog="cms")
     sub = parser.add_subparsers(dest="command", required=True)
     serve = sub.add_parser("serve", help="run the admin console locally")
     serve.add_argument("--port", type=int, default=8000)
     serve.add_argument("--reload", action="store_true", default=True)
     sub.add_parser("publish", help="render site/ from published content")
-    deploy = sub.add_parser("deploy", help="push site/ to gh-pages")
-    deploy.add_argument("--message", default="Publish site")
+    deploy_cmd = sub.add_parser("deploy", help="push site/ to gh-pages")
+    deploy_cmd.add_argument("--message", default="Publish site")
     create = sub.add_parser("create-admin", help="create an Admin account")
     create.add_argument("email")
     create.add_argument("--name", default="Admin", help="display name")
@@ -73,14 +73,23 @@ def main(argv: list[str] | None = None) -> int:
         if not settings.SITE.exists():
             print("site/ does not exist yet — run `uv run cms publish` first.")
             return 1
-        result = subprocess.run(
-            [sys.executable, "-m", "ghp_import", "-n", "-p", "-m", args.message,
-             str(settings.SITE)],
-        )
-        if result.returncode == 0:
-            print("Pushed to gh-pages. Settings -> Pages -> Deploy from a branch -> "
-                  "gh-pages / root, then wait up to 10 minutes.")
-        return result.returncode
+        bad = deploy.root_absolute_files(settings.SITE)
+        if bad:
+            print("Refusing to deploy: root-absolute paths (href=\"/...\") in "
+                  + ", ".join(str(b) for b in bad)
+                  + ". Run `uv run cms publish` again.")
+            return 1
+        if confirm("Push site/ to gh-pages and make it Live? [y/N] ").strip().lower() not in ("y", "yes"):
+            print("Not deployed. Nothing was pushed.")
+            return 0
+        code = push(settings.SITE, args.message)
+        if code != 0:
+            print("The push failed, so nothing was recorded as deployed.")
+            return code
+        deploy.record_deploy(settings.DATABASE_PATH)
+        print("Pushed to gh-pages. In GitHub: Settings -> Pages -> Deploy from a "
+              "branch -> gh-pages / root. It can take up to 10 minutes to appear.")
+        return 0
     return 1
 
 

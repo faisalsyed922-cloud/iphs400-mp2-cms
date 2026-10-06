@@ -135,7 +135,7 @@ def current_admin(database: Path) -> sqlite3.Row | None:
     with connect(database) as conn:
         return conn.execute(
             "select * from users where role = 'admin' and is_active = 1"
-            " order by id limit 1").fetchone()
+            " order by id desc limit 1").fetchone()
 
 
 def get_setting(database: Path, key: str, default: str = "") -> str:

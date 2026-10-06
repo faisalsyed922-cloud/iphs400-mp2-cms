@@ -166,3 +166,12 @@ def test_contact_line_never_reaches_the_static_site(client_as, db_path, tmp_path
 
 def test_short_initial_password_is_refused(client_as):
     assert new_user(client_as("admin"), password="short-pw-11").status_code == 400
+
+
+def test_blocked_editor_is_pointed_at_the_newest_active_admin(client_as):
+    a = client_as("admin")
+    assert new_user(a, email="new@example.test", display_name="Newest President",
+                    role="admin").status_code == 303
+    r = client_as("editor").get("/admin/users")
+    assert r.status_code == 403
+    assert "Newest President" in r.text and "Demo Admin" not in r.text

@@ -21,12 +21,7 @@ from app.markdown import render_markdown
 from app.posts import format_byline
 from app.users import connect
 
-CSS = """/* Minimal starter styles — make them yours. */
-:root { color-scheme: light dark; }
-body { font: 16px/1.6 system-ui, sans-serif; margin: 0 auto; max-width: 42rem; padding: 1rem; }
-header a { font-weight: 700; text-decoration: none; }
-main { margin-block: 2rem; }
-"""
+CSS = (settings.STATIC / "style.css").read_text()
 
 
 def environment() -> Environment:

@@ -20,6 +20,7 @@ def _load_dotenv(path: Path) -> None:
 
 _load_dotenv(ROOT / ".env")
 TEMPLATES = ROOT / "templates"
+STATIC = ROOT / "app" / "static"
 SITE = ROOT / "site"
 
 DEV_SECRET_KEY = "dev-only-not-for-production"

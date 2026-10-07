@@ -13,6 +13,7 @@ from pathlib import Path
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+from fastapi.staticfiles import StaticFiles
 
 from app import pages, posts, settings, users
 from app.routes import auth, dashboard, pages as pages_routes, posts as posts_routes, user_password, users as users_routes
@@ -46,6 +47,7 @@ def create_app(database: Path | None = None) -> FastAPI:
              "contact_line": users.get_setting(db, "contact_line")},
             status_code=403)
 
+    app.mount("/static", StaticFiles(directory=str(settings.STATIC)), name="static")
     app.include_router(auth.router)
     app.include_router(user_password.router)
     app.include_router(users_routes.router)

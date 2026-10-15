@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "admin/_items.html" import row %}
+{% from "admin/_items.html" import row with context %}
 {% block content %}
   <h1>Dashboard</h1>
   <p>Signed in as {{ user.display_name }} ({{ user.role }}).</p>
@@ -27,7 +27,7 @@
   <section data-section="unassigned">
     <h2>Pages needing an Assigned editor</h2>
     {% if not unassigned %}<p>Every Page has an Assigned editor.</p>{% endif %}
-    <ul>{% for p in unassigned %}<li><a href="/admin/pages/{{ p.id }}">{{ p.title }}</a></li>{% endfor %}</ul>
+    <ul>{% for p in unassigned %}<li><a href="{{ url_for('edit_form', page_id=p.id) }}">{{ p.title }}</a></li>{% endfor %}</ul>
   </section>
   {% endif %}
 

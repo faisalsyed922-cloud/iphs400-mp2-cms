@@ -9,13 +9,25 @@ Do not fork: a fork arrives without an Issues tab, and your tickets live in Issu
 2. `docs/mp2-grading-rubric_20260922.md` — how you are graded. Read it **before** you build.
 3. `docs/mp2-setup_context-threshold-hook_20260922.md` — Exercise A, in Part 4 of the manual.
 
-## Run it
+## Run locally
 
-```bash
-uv sync
-cp .env.example .env
-uv run cms serve        # then open http://localhost:8000/admin  -> "T00: hello admin"
-```
+1. Install dependencies: `uv sync`
+2. Copy the example settings and set a secret key:
+
+   ```bash
+   cp .env.example .env
+   ```
+
+   Edit `.env` and replace `CMS_SECRET_KEY` with a long random string (for example
+   `python3 -c "import secrets; print(secrets.token_urlsafe(48))"`). Change the demo
+   passwords too. `.env` is gitignored; never commit it.
+3. Seed demo accounts and content: `uv run python scripts/seed_demo.py`
+   (creates an Admin and an Editor using the passwords in `.env`, plus sample Posts
+   and Pages).
+4. Start the admin console: `uv run cms serve`
+5. Open <http://localhost:8000/admin> and log in as the seeded Admin.
+6. When the content is ready, render and push it (see below):
+   `uv run cms publish`, then `uv run cms deploy`.
 
 ## Publish, then deploy
 

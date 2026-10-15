@@ -2,7 +2,7 @@
   <li>
     <span class="badge badge-{{ item.status }}">{{ item.status | capitalize }}</span>
     <span>{{ item.kind | capitalize }}</span>
-    {% if can_edit(user, item) %}<a href="/admin/{{ 'posts' if item.kind == 'post' else 'pages' }}/{{ item.id }}">{{ item.title }}</a>{% else %}<span>{{ item.title }}</span>{% endif %}
+    {% if can_edit(user, item) %}<a href="{{ url_for('edit_form', post_id=item.id) if item.kind == 'post' else url_for('edit_form', page_id=item.id) }}">{{ item.title }}</a>{% else %}<span>{{ item.title }}</span>{% endif %}
     <small>{% if item.owner_name %}{{ 'by' if item.kind == 'post' else 'assigned to' }} {{ item.owner_name }}{% else %}no Assigned editor{% endif %}</small>
     {% if item.changed %}<span class="changed-since-deploy">changed since last Deploy</span>{% endif %}
   </li>

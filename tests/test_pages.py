@@ -281,3 +281,12 @@ def test_page_and_post_preview_show_the_published_navigation_in_order(client_as)
     assert nav_labels(post_preview) == expected
     assert "Draft preview, not public" in post_preview
     assert 'href="pages/' not in page_preview  # preview links must not point at the site
+
+
+def test_new_page_link_on_pages_list_opens_the_page_form(client_as):
+    c = client_as("admin")
+    html = c.get("/admin/pages").text
+    href = re.search(r'<a href="([^"]*)">New page</a>', html).group(1)
+    assert href.endswith("/admin/pages/new"), href
+    form = c.get(href).text
+    assert '<form method="post" action="/admin/pages"' in form

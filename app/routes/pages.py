@@ -73,7 +73,7 @@ def pages_list(request: Request, user=Depends(current_user)):
 
 
 @router.get("/new")
-def new_form(request: Request, user=Depends(require_admin)):
+def page_new_form(request: Request, user=Depends(require_admin)):
     return render_form(request, user)
 
 

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% block content %}
   <h1>Pages</h1>
-  <p>{% if is_admin %}<a href="{{ url_for('new_form') }}">New page</a> · {% endif %}<a href="{{ url_for('admin_home') }}">Dashboard</a></p>
+  <p>{% if is_admin %}<a href="{{ url_for('page_new_form') }}">New page</a> · {% endif %}<a href="{{ url_for('admin_home') }}">Dashboard</a></p>
   {% if not pages %}<p>No pages yet.</p>{% endif %}
   <ul>
   {% for p in pages %}

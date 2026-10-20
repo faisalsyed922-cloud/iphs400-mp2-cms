@@ -24,6 +24,10 @@ def dashboard(request: Request, user=Depends(current_user)):
     return templates.TemplateResponse(
         request, "admin/dashboard.html",
         {"title": "Dashboard", "user": user, "csrf_token": csrf_token(request),
+         "counts": {
+             "drafts": sum(i["status"] == "draft" for i in items),
+             "posts": sum(i["status"] == "published" and i["kind"] == "post" for i in items),
+             "pages": sum(i["status"] == "published" and i["kind"] == "page" for i in items)},
          "pending": [i for i in items if i["pending"]],
          "drafts": [i for i in items if i["status"] == "draft"],
          "recent": [i for i in items if i["owner_id"] == user["id"]][:RECENT],

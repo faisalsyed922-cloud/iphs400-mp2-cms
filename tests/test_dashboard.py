@@ -179,3 +179,21 @@ def test_items_changed_since_last_deploy_are_marked(client_as, db_path):
     assert "changed since last Deploy" not in c.get("/admin/content").text
     make_post(c, "Fresh")
     assert "changed since last Deploy" in c.get("/admin/content").text
+
+
+# --- counts ----------------------------------------------------------------
+def counts(html):
+    return {k: int(v) for k, v in re.findall(r'data-count="(\w+)">(\d+)<', html)}
+
+
+def test_dashboard_counts_drafts_and_published_posts_and_pages(client_as):
+    c = client_as("admin")
+    before = counts(c.get("/admin").text)
+    make_post(c, "Counted draft post")
+    make_post(c, "Counted published post", action="publish")
+    make_page(c, "Counted draft page")
+    make_page(c, "Counted published page", action="publish")
+    after = counts(c.get("/admin").text)
+    assert after["drafts"] == before["drafts"] + 2
+    assert after["posts"] == before["posts"] + 1
+    assert after["pages"] == before["pages"] + 1

@@ -2,6 +2,11 @@
 {% from "admin/_items.html" import row with context %}
 {% block content %}
   <h1>Dashboard</h1>
+  <ul data-section="counts" class="counts">
+    <li>Drafts: <strong data-count="drafts">{{ counts.drafts }}</strong></li>
+    <li>Published posts: <strong data-count="posts">{{ counts.posts }}</strong></li>
+    <li>Published pages: <strong data-count="pages">{{ counts.pages }}</strong></li>
+  </ul>
   <p>Signed in as {{ user.display_name }} ({{ user.role }}).</p>
   <p><a href="{{ url_for('content_list') }}">All content</a> · <a href="{{ url_for('content_list') }}?mine=1">Mine</a> · <a href="{{ url_for('new_form') }}">New post</a> · <a href="{{ url_for('list_view') }}">Posts</a> · <a href="{{ url_for('pages_list') }}">Pages</a>{% if is_admin %} · <a href="{{ url_for('users_list') }}">Users</a>{% endif %}</p>
 

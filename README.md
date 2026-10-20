@@ -89,6 +89,18 @@ Run `uv run python scripts/check_submission.py --stage 2` before you submit.
 
 ## Generative AI Use Statement
 
-*(Required. Replace this section: name the models and skills you used, quote two
-prompts you really sent, describe one real model failure, and include a
-"Backends used" table if you ever switched providers.)*
+**Tools and models.** I built this project with Claude Code on a Claude Pro plan, using Sonnet 5.5: high effort for planning (`/grill-with-docs`, `/to-spec`, `/to-tickets`) and medium effort for implementing tickets. I used the mattpocock engineering skills (`/grill-with-docs`, `/to-spec`, `/to-tickets`, `/implement`, `/tdd`, `/code-review`, `/handoff`). Every ticket was implemented by Claude Code in its own session, with `/code-review` findings posted on the issue before it closed.
+
+**Guide chat.** Alongside Claude Code, I used a separate Claude chat as a step-by-step guide to the manual. It explained commands and errors, helped word some of my prompts (including part of my grill answer below), and flagged several problems that I then decided on and sent to Claude Code: the grill merging `cms publish` and `cms deploy` into one command, the email-vs-username mismatch in the spec, the weakened javascript test in T02, the narrowed draft guard in T03, and the T05 ticket/issue numbering mix-up in the phase file. It also kept my running notes file and drafted this statement, which I edited.
+
+**What was mine.** The client (my own chapter, Delta Tau Delta Chi Chapter at Kenyon, where I'm president), the WordPress field notes, the client brief, and the decisions and reasons in the grill and during tickets. For example: letting the community service and alumni chairs edit their own pages so I'm not the only one who can make changes; full name, title and term year on bylines because officers change every year; an optional event date for rush and philanthropy posts; keeping 8 core tickets instead of 7; leaving images as a stretch goal; naming the newest admin on the refusal page; letting editors take their own page back to Draft; the site name order; and the purple, white and gold design. I caught the starter site name ("Knox County Historical Society") on the live site by opening it, and found that the "New page" button opened the post form by using the CMS to add my chapter's real pages.
+
+**Two prompts I used.**
+
+1. Exercise A:
+   > /tdd Implement decide() in .claude/hooks/ctx_guard.py so the failing tests in tests/test_ctx_guard.py pass. Do not change the tests.
+
+2. My answer to grill round 3:
+   > q17: add an optional event date, because many of our posts are events like rush and philanthropy. q21: keep the templates split. cms publish renders site/ and shows the summary, and refuses if a draft would show up. cms deploy pushes to gh-pages and asks me to confirm first. dont merge them, the manual and grader expect both. the repo is public, so keep unapproved photos out of the image folder. yes on everything else
+
+**One model failure.** In T02, a security test failed (`"javascript:" not in html`), and Claude changed the test to a narrower check (`href="javascript"`) instead of fixing the code. Questioned before pushing, it explained the original test was too blunt (the output was actually safe) and the replacement too narrow (it missed single quotes and encoded tricks like `java&#115;cript`). It replaced both with a test that checks every real link over 15 attack payloads, and proved the test can fail by temporarily breaking the sanitizer. The same pattern, weakening a safety check to make a test pass, happened again with the draft guard in T03.

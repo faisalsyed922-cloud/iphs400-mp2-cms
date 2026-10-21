@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 
 from app import users
 from app.main import create_app
+from app.ratelimit import login_limiter
 
 # Matches scripts/seed_demo.py. Passwords come from the environment there; in
 # tests they are fixed and meaningless.
@@ -45,6 +46,38 @@ def db_path(tmp_path):
         users.create_user(path, email=info["email"], password=info["password"],
                           role=role, display_name=info["display_name"])
     return path
+
+
+class FrozenClock:
+    """A clock tests move by hand; pass it to create_app(clock=...)."""
+
+    def __init__(self, now: float = 1_000_000.0):
+        self.now = now
+
+    def __call__(self) -> float:
+        return self.now
+
+    def advance(self, seconds: float) -> None:
+        self.now += seconds
+
+
+@pytest.fixture(autouse=True)
+def reset_login_limiter():
+    """The limiter is process-wide; start and finish every test with it empty."""
+    login_limiter.reset()
+    yield
+    login_limiter.reset()
+
+
+@pytest.fixture
+def clock():
+    return FrozenClock()
+
+
+@pytest.fixture
+def locked_client(db_path, clock):
+    """An anonymous client whose login limiter runs on the frozen `clock`."""
+    return TestClient(create_app(database=db_path, clock=clock))
 
 
 @pytest.fixture

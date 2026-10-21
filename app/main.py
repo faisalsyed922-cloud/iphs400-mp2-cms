@@ -9,21 +9,26 @@ them here. Keep this file small.
 """
 from __future__ import annotations
 
+import time
 from pathlib import Path
+from typing import Callable
 
 from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 
 from app import pages, posts, settings, users
+from app.ratelimit import login_limiter
 from app.routes import auth, dashboard, pages as pages_routes, posts as posts_routes, user_password, users as users_routes
 from app.security import SESSION_SECONDS, SkewTolerantSessionMiddleware, AdminRequired, LoginRequired, PasswordChangeRequired
 from app.templating import templates
 
 
-def create_app(database: Path | None = None) -> FastAPI:
+def create_app(database: Path | None = None,
+               clock: Callable[[], float] | None = None) -> FastAPI:
     app = FastAPI(title="Chi Chapter CMS")
     app.state.database = Path(database or settings.DATABASE_PATH)
+    login_limiter.clock = clock or time.time
     users.init_db(app.state.database)
     posts.init_posts(app.state.database)
     pages.init_pages(app.state.database)

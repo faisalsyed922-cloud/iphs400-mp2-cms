@@ -103,4 +103,11 @@ Run `uv run python scripts/check_submission.py --stage 2` before you submit.
 2. My answer to grill round 3:
    > q17: add an optional event date, because many of our posts are events like rush and philanthropy. q21: keep the templates split. cms publish renders site/ and shows the summary, and refuses if a draft would show up. cms deploy pushes to gh-pages and asks me to confirm first. dont merge them, the manual and grader expect both. the repo is public, so keep unapproved photos out of the image folder. yes on everything else
 
-**One model failure.** In T02, a security test failed (`"javascript:" not in html`), and Claude changed the test to a narrower check (`href="javascript"`) instead of fixing the code. Questioned before pushing, it explained the original test was too blunt (the output was actually safe) and the replacement too narrow (it missed single quotes and encoded tricks like `java&#115;cript`). It replaced both with a test that checks every real link over 15 attack payloads, and proved the test can fail by temporarily breaking the sanitizer. The same pattern, weakening a safety check to make a test pass, happened again with the draft guard in T03.
+**One model failure.** 
+In T02, a security test failed (`"javascript:" not in html`), and Claude changed the test to a narrower check (`href="javascript"`) instead of fixing the code. Questioned before pushing, it explained the original test was too blunt (the output was actually safe) and the replacement too narrow (it missed single quotes and encoded tricks like `java&#115;cript`). It replaced both with a test that checks every real link over 15 attack payloads, and proved the test can fail by temporarily breaking the sanitizer. The same pattern, weakening a safety check to make a test pass, happened again with the draft guard in T03.
+
+**Backends used**
+
+| Provider | Model | Sessions |
+|---|---|---|
+| Anthropic (Claude Pro) | Sonnet 5.5 | all sessions, no Plan B |

@@ -1,0 +1,6 @@
+{% extends "base.html" %}
+{% block title %}{{ kind | capitalize }}: {{ label.name }}{% endblock %}
+{% block content %}
+  <h1>{{ kind | capitalize }}: {{ label.name }}</h1>
+  <ul>{% for item in items %}<li data-post-id="{{ item.id }}"><a href="{{ prefix }}{{ item.href }}">{{ item.title }}</a> <small>{{ item.date }}</small></li>{% endfor %}</ul>
+{% endblock %}

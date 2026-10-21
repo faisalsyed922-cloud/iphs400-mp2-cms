@@ -29,7 +29,8 @@ def load_post(request: Request, user, post_id: int, allowed) -> dict:
 def render_form(request: Request, user, *, post=None, form=None, error=None,
                 status_code=200):
     if form is None:
-        form = ({"title": post["title"], "slug": post["slug"], "body": post["body"]}
+        form = ({"title": post["title"], "slug": post["slug"], "body": post["body"],
+                 "category": post["category"], "tags": post["tags"]}
                 if post else {})
     return templates.TemplateResponse(
         request, "admin/post_form.html",
@@ -78,16 +79,21 @@ def preview(request: Request, user=Depends(current_user), title: str = Form(""),
 
 @router.post("", dependencies=guarded)
 def create(request: Request, user=Depends(current_user), title: str = Form(""),
-           slug: str = Form(""), body: str = Form(""), action: str = Form("save")):
-    form = {"title": title, "slug": slug, "body": body}
+           slug: str = Form(""), body: str = Form(""), action: str = Form("save"),
+           category: str = Form(""), tags: str = Form("")):
+    form = {"title": title, "slug": slug, "body": body, "category": category,
+            "tags": tags}
     if not title.strip():
         return render_form(request, user, form=form, error="A Post needs a title.",
                            status_code=400)
+    error = posts.unusable_labels(category, tags)
+    if error:
+        return render_form(request, user, form=form, error=error, status_code=400)
     try:
         post_id = posts.create_post(
             request.app.state.database, author=user, title=title.strip(),
             slug=posts.slugify(slug) if slug.strip() else "", body=body,
-            publish=action == "publish")
+            publish=action == "publish", category=category, tags=tags)
     except posts.DuplicateSlug:
         return render_form(request, user, form=form, status_code=400,
                            error="That Slug is already used by another Post.")
@@ -103,20 +109,25 @@ def edit_form(request: Request, post_id: int, user=Depends(current_user)):
 @router.post("/{post_id:int}", dependencies=guarded)
 def save(request: Request, post_id: int, user=Depends(current_user),
          title: str = Form(""), slug: str = Form(""), body: str = Form(""),
-         action: str = Form("save")):
+         action: str = Form("save"), category: str = Form(""), tags: str = Form("")):
     post = load_post(request, user, post_id, authz.can_edit_post)
     if action not in ACTIONS:
         raise HTTPException(400, "Unknown action.")
-    form = {"title": title, "slug": slug, "body": body}
+    form = {"title": title, "slug": slug, "body": body, "category": category,
+            "tags": tags}
     if not title.strip():
         return render_form(request, user, post=post, form=form, status_code=400,
                            error="A Post needs a title.")
+    error = posts.unusable_labels(category, tags)
+    if error:
+        return render_form(request, user, post=post, form=form, error=error, status_code=400)
     new_slug = None
     if authz.can_edit_slug(user, post):
         new_slug = posts.slugify(slug) if slug.strip() else post["slug"]
     try:
         posts.update_post(request.app.state.database, post_id, title=title.strip(),
-                          body=body, slug=new_slug, action=action)
+                          body=body, slug=new_slug, action=action,
+                          category=category, tags=tags)
     except posts.DuplicateSlug:
         return render_form(request, user, post=post, form=form, status_code=400,
                            error="That Slug is already used by another Post.")

@@ -48,6 +48,18 @@ _Avoid_: Article, update, entry
 An undated, authorless piece of standing content (About, History, Community Service) that can appear in public navigation.
 _Avoid_: Section
 
+**Category**:
+The one topic an Editor files a Post under, such as "Chapter events". Posts only; Pages have none. The Publish run writes one index page per Category listing its Published Posts, and the admin content list filters by it.
+_Avoid_: Section, topic, folder
+
+**Tag**:
+A short label on a Post; a Post can have several, entered as one comma-separated field. Posts only. The Publish run writes one index page per Tag listing its Published Posts. The admin content list does not filter by Tag.
+_Avoid_: Keyword, hashtag
+
+**Label**:
+The shared word for a Category or a Tag, used where code or copy treats them alike (their index pages, their Slugs). A Label needs at least one letter or digit to have a Slug.
+_Avoid_: Term (that is an Officer's year), taxon
+
 **Home page**:
 The one Page flagged as the front door of the public site. Home shows it followed by the 5 latest Posts. Flagging another Page moves the flag; there is always exactly one.
 _Avoid_: Landing page, front page

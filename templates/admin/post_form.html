@@ -16,6 +16,10 @@
     <p><label>Title <input name="title" value="{{ form.title }}" required></label></p>
     <p><label>Slug <input name="slug" value="{{ form.slug }}"{% if not can_edit_slug %} readonly{% endif %}></label>
       {% if not can_edit_slug %}<small>Locked once a Post has been Published. Ask the Admin to unlock it.</small>{% endif %}</p>
+    <p><label>Category <input name="category" value="{{ form.category }}" maxlength="80"></label>
+      <small>One category per Post.</small></p>
+    <p><label>Tags <input name="tags" value="{{ form.tags }}"></label>
+      <small>Separate tags with commas.</small></p>
     <p><label>Body (Markdown)<br><textarea name="body" rows="16" cols="70">{{ form.body }}</textarea></label></p>
     <p>
       <button type="submit" name="action" value="save">Save</button>

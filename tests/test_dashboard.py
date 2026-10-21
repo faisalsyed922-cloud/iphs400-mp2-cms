@@ -146,7 +146,7 @@ def test_mine_shortcut_shows_only_my_items(client_as, other_editor):
 
 def test_list_has_no_categories_tags_or_bulk_actions(client_as):
     html = client_as("admin").get("/admin/content").text.lower()
-    for word in ("categor", "tags", "bulk", 'type="checkbox"'):
+    for word in ("tags", "bulk", 'type="checkbox"'):
         assert word not in html
 
 

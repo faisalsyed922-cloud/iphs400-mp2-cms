@@ -4,6 +4,10 @@
   <article data-post-id="{{ post.id }}">
     <h1>{{ post.title }}</h1>
     <p><small>{{ post.date }}{% if post.byline %} · {{ post.byline }}{% endif %}</small></p>
+    {% if post.category or post.tags %}<p><small>
+      {% if post.category %}Category: <a href="{{ prefix }}{{ post.category.href }}">{{ post.category.name }}</a>{% endif %}
+      {% if post.tags %}Tags: {% for t in post.tags %}<a href="{{ prefix }}{{ t.href }}">{{ t.name }}</a>{% if not loop.last %}, {% endif %}{% endfor %}{% endif %}
+    </small></p>{% endif %}
     {{ post.body | safe }}
   </article>
 {% endblock %}

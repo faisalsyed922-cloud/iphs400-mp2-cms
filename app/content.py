@@ -9,21 +9,23 @@ import sqlite3
 from pathlib import Path
 
 from app.deploy import last_deploy
+from app.posts import label_slug
 from app.users import connect
 
 _ITEMS = """
 select 'post' as kind, posts.id, posts.title, posts.status, posts.updated_at,
-       posts.author_id as owner_id, users.display_name as owner_name
+       posts.author_id as owner_id, users.display_name as owner_name,
+       posts.category as category
   from posts join users on users.id = posts.author_id
 union all
 select 'page', pages.id, pages.title, pages.status, pages.updated_at,
-       pages.assigned_editor_id, users.display_name
+       pages.assigned_editor_id, users.display_name, ''
   from pages left join users on users.id = pages.assigned_editor_id
 """
 
 
 def list_items(database: Path, *, status: str = "", kind: str = "",
-               owner_id: int | None = None) -> list[dict]:
+               owner_id: int | None = None, category: str = "") -> list[dict]:
     """Posts and Pages, newest change first, each marked with `changed`
     (changed since the last Deploy) and `pending` (needs releasing)."""
     clauses, params = [], []
@@ -36,8 +38,12 @@ def list_items(database: Path, *, status: str = "", kind: str = "",
     if owner_id is not None:
         clauses.append("owner_id = ?")
         params.append(owner_id)
+    if category:  # Pages have no category, so a category filter shows Posts only
+        clauses.append("label_slug(category) = ?")
+        params.append(label_slug(category))
     where = " where " + " and ".join(clauses) if clauses else ""
     with connect(database) as conn:
+        conn.create_function("label_slug", 1, label_slug, deterministic=True)
         rows = conn.execute(f"select * from ({_ITEMS}){where}"
                             " order by updated_at desc, kind, id desc",
                             params).fetchall()
@@ -50,6 +56,15 @@ def list_items(database: Path, *, status: str = "", kind: str = "",
         item["pending"] = item["status"] == "published" and item["changed"]
         items.append(item)
     return items
+
+
+def categories(database: Path) -> list[tuple[str, str]]:
+    """Each Category in use as (slug, name), once per Slug, alphabetical."""
+    with connect(database) as conn:
+        names = [r[0] for r in conn.execute(
+            "select distinct category from posts where category != ''")]
+    by_slug = {label_slug(n): n for n in names}
+    return sorted(by_slug.items(), key=lambda kv: kv[1].lower())
 
 
 def unassigned_pages(database: Path) -> list[sqlite3.Row]:

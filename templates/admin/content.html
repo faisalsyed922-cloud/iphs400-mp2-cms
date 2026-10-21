@@ -21,6 +21,11 @@
         <option value="">Anyone</option>
         {% for a in authors %}<option value="{{ a.id }}" {% if filters.author == a.id | string %}selected{% endif %}>{{ a.display_name }}</option>{% endfor %}
       </select></label>
+    <label>Category
+      <select name="category">
+        <option value="">Any</option>
+        {% for slug, name in categories %}<option value="{{ slug }}" {% if filters.category == slug %}selected{% endif %}>{{ name }}</option>{% endfor %}
+      </select></label>
     <button type="submit">Filter</button>
     <a href="{{ url_for('content_list') }}?mine=1">Mine</a>
     <a href="{{ url_for('content_list') }}">Clear</a>

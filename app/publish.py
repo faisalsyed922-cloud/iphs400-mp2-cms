@@ -18,7 +18,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from app import settings
 from app.markdown import render_markdown
-from app.posts import format_byline
+from app.posts import format_byline, label_slug, tag_list
 from app.users import connect
 
 CSS = (settings.STATIC / "style.css").read_text()
@@ -68,6 +68,12 @@ def _published_posts(database: Path) -> list:
 
 def _draft_rows(database: Path) -> list:
     return _posts_where(database, "status!='published'")
+
+
+def _label(name: str, kind: str) -> dict | None:
+    """A Category or Tag with its Slug and site-relative index page."""
+    slug = label_slug(name)
+    return {"name": name, "slug": slug, "href": f"{kind}/{slug}.html"} if slug else None
 
 
 def _first_paragraph(html: str) -> str:
@@ -149,7 +155,15 @@ def _render_into(work: Path, database: Path) -> list[str]:
             "byline": format_byline(post["byline_name"], post["byline_title"],
                                     post["byline_term"]),
             "href": f"posts/{post['slug']}.html",
+            "category": _label(post["category"], "category"),
+            "tags": [t for t in (_label(n, "tag") for n in tag_list(post)) if t],
         })
+    categories: dict[str, dict] = {}
+    tags: dict[str, dict] = {}
+    for e in entries:  # entries are newest first, so each Label's posts are too
+        for group, label in [(categories, e["category"])] + [(tags, t) for t in e["tags"]]:
+            if label:
+                group.setdefault(label["slug"], {**label, "items": []})["items"].append(e)
 
     page_entries = []
     for page in _published_pages(database):
@@ -172,7 +186,7 @@ def _render_into(work: Path, database: Path) -> list[str]:
             css_path=prefix + "style.css",
             home_path=prefix + "index.html", news_path=prefix + "news.html",
             nav_links=[(label, prefix + href) for label, href in links],
-            **ctx))
+            prefix=prefix, **ctx))
 
     write("index.html", "public/home.html", "", items=entries[:5], home_page=home_page)
     write("news.html", "public/news.html", "", items=entries)
@@ -180,10 +194,18 @@ def _render_into(work: Path, database: Path) -> list[str]:
         write(e["href"], "public/post.html", "../", post=e)
     for p in page_entries:
         write(p["href"], "public/page.html", "../", page=p)
+    for kind, group in (("category", categories), ("tag", tags)):
+        if group:
+            (work / kind).mkdir()
+        for label in group.values():
+            write(label["href"], "public/label.html", "../", kind=kind, label=label,
+                  items=label["items"])
     _check_no_drafts(work, database)
     return (["Home (index.html)", "News (news.html)"]
             + [f"Page: {p['title']} ({p['href']})" for p in page_entries]
-            + [f"Post: {e['title']} ({e['href']})" for e in entries])
+            + [f"Post: {e['title']} ({e['href']})" for e in entries]
+            + [f"Category: {t['name']} ({t['href']})" for t in categories.values()]
+            + [f"Tag: {t['name']} ({t['href']})" for t in tags.values()])
 
 
 def render_site(out: Path | None = None, database: Path | None = None) -> Path:

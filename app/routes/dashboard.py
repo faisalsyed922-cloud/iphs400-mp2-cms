@@ -37,12 +37,15 @@ def dashboard(request: Request, user=Depends(current_user)):
 
 @router.get("/admin/content", name="content_list")
 def content_list(request: Request, user=Depends(current_user), status: str = "",
-                 type: str = "", author: str = "", mine: str = ""):
+                 type: str = "", author: str = "", mine: str = "",
+                 category: str = ""):
     db = request.app.state.database
     owner_id = user["id"] if mine else (int(author) if author.isascii() and author.isdigit() else None)
     return templates.TemplateResponse(
         request, "admin/content.html",
         {"title": "Content", "user": user, "csrf_token": csrf_token(request),
-         "items": content.list_items(db, status=status, kind=type, owner_id=owner_id),
-         "authors": users.list_users(db), "can_edit": can_edit_item,
-         "filters": {"status": status, "type": type, "author": author, "mine": mine}})
+         "items": content.list_items(db, status=status, kind=type, owner_id=owner_id,
+                                    category=category),
+         "authors": users.list_users(db), "categories": content.categories(db), "can_edit": can_edit_item,
+         "filters": {"status": status, "type": type, "author": author, "mine": mine,
+                     "category": category}})

@@ -45,16 +45,19 @@ def main() -> int:
     editor = users.authenticate(settings.DATABASE_PATH, "editor@example.test",
                                 editor_pw)
     existing = {p["slug"] for p in posts.list_posts(settings.DATABASE_PATH)}
-    for title, body, publish in (
+    for title, body, publish, category, tags in (
         ("Welcome to the new chapter site",
          "The **Chi Chapter** now keeps its own news. Read more on our "
-         "[chapter page](https://example.org).", True),
-        ("Rush announcement (draft)", "Dates still to be confirmed.", False),
+         "[chapter page](https://example.org).", True, "Chapter news",
+         "welcome, brotherhood"),
+        ("Rush announcement (draft)", "Dates still to be confirmed.", False,
+         "Chapter news", "rush, brotherhood"),
     ):
         if posts.slugify(title) in existing:
             continue
         posts.create_post(settings.DATABASE_PATH, author=editor, title=title,
-                          slug="", body=body, publish=publish)
+                          slug="", body=body, publish=publish, category=category,
+                          tags=tags)
         print(f"Created {'Published' if publish else 'Draft'} post: {title}")
     pages.init_pages(settings.DATABASE_PATH)
     existing_pages = {p["slug"] for p in pages.list_pages(settings.DATABASE_PATH)}

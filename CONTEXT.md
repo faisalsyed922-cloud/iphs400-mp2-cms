@@ -99,3 +99,11 @@ _Avoid_: Menu
 **Slug**:
 The URL-safe name of a Post or Page, unique within its kind and locked after first being Published.
 _Avoid_: Permalink, URL name
+
+## Decisions
+
+| Question | Choice | Why |
+|---|---|---|
+| Who can edit Pages? | Each page has one Assigned editor (e.g. alumni chair owns History); only the Admin creates or deletes pages |As president, I do not want to be the sole person who edits, everyone should edit the pages that fit their position |
+| What does a byline show? | Full name, officer title and term year, copied when a post is first published | People change in positions YOY, so the term year is essential along with everything else |
+| What happens when an officer graduates? | Deactivate, never delete; their posts and bylines stay | They lose access once they graduate, but their posts are part of the chapter history and should remain |
